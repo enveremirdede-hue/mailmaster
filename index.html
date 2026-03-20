@@ -63,7 +63,6 @@
 
         .chat-window { flex-grow: 1; display: flex; flex-direction: column; background-color: var(--chat-bg); position: relative; transition: 0.3s;}
         
-        /* ARAMA BARINI ÜST KISMA EKLEDİK */
         .chat-header { padding: 15px 25px; background-color: var(--panel-bg); display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(134, 150, 160, 0.15); z-index: 10; transition: 0.3s; justify-content: space-between;}
         .chat-header-info { display: flex; align-items: center; gap: 15px; }
         .msg-search-input { padding: 8px 15px; border-radius: 20px; border: none; background: var(--sidebar-bg); color: var(--text-main); outline: none; font-size: 13px; width: 150px; transition: 0.3s; }
@@ -140,24 +139,10 @@
         .fullscreen-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center;}
         .fullscreen-modal-content { max-width: 90%; max-height: 85dvh; border-radius: 8px; }
         
-        /* GİZLİ ODA VE DM STİLLERİ KORUNDU */
         .group-card { background: var(--sidebar-bg); border: 1px solid rgba(134,150,160,0.2); padding: 20px; border-radius: 10px; margin-bottom: 15px; text-align: left;}
         
-        /* İNDİRME BUTONU STİLİ YENİ EKLENDİ */
-        .download-btn {
-            display: inline-block;
-            margin-top: 5px;
-            padding: 5px 10px;
-            background-color: #4CAF50;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .download-btn:hover {
-            background-color: #45a049;
-        }
+        .download-btn { display: inline-block; margin-top: 5px; padding: 5px 10px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-size: 12px; font-weight: bold; }
+        .download-btn:hover { background-color: #45a049; }
 
         @media (max-width: 768px) {
             .msg-actions { opacity: 1 !important; }
@@ -167,7 +152,6 @@
             .msg-search-input:focus { width: 130px; }
         }
         
-        /* Arama yapıldığında mesajı parlatmak için */
         .highlight-msg { animation: highlightAnim 2s; }
         @keyframes highlightAnim { 0% { background-color: rgba(0,168,132,0.5); } 100% { background-color: transparent; } }
     </style>
@@ -230,7 +214,36 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="settingsModal"><div class="modal"><h2>Kullanıcı Adını Belirle</h2><br><input type="text" id="newUsernameInput" placeholder="Örn: EnverEmir"><button onclick="saveUsername()">Kayıt Ol ve Başla</button></div></div>
+    <div class="modal-overlay" id="authModal" style="display: none; background: rgba(0,0,0,0.9); z-index: 1000;">
+        <div class="modal" style="width: 380px;">
+            <div style="display: flex; justify-content: space-around; margin-bottom: 20px; border-bottom: 1px solid rgba(134,150,160,0.2); padding-bottom: 10px;">
+                <h3 id="tabLogin" style="cursor: pointer; color: var(--accent); transition: 0.3s;" onclick="switchAuthTab('login')">Giriş Yap</h3>
+                <h3 id="tabReg" style="cursor: pointer; color: var(--text-muted); transition: 0.3s;" onclick="switchAuthTab('reg')">Kayıt Ol</h3>
+            </div>
+            
+            <div id="loginForm">
+                <input type="text" id="loginUser" placeholder="Kullanıcı Adı">
+                <input type="password" id="loginPass" placeholder="Şifre">
+                <button onclick="handleLogin()">Giriş Yap</button>
+            </div>
+            
+            <div id="regForm" style="display: none;">
+                <input type="text" id="regUser" placeholder="Kullanıcı Adı Seçin">
+                <input type="password" id="regPass" placeholder="Şifre Belirleyin">
+                <button onclick="handleRegister()">Kayıt Ol ve Başla</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="legacyUserModal" style="display: none; background: rgba(200, 0, 0, 0.95); z-index: 9999;">
+        <div class="modal" style="background: #fff; color: #333; text-align: center;">
+            <h2 style="color: #c00; font-size: 24px;">⚠️ DİKKAT!</h2>
+            <h3 style="color: #333; margin-top: 10px;">Şifreniz Bulunmuyor</h3>
+            <p style="margin: 15px 0; font-size: 14.5px; color: #555; line-height: 1.5;">Hesabınızı eski sürümde oluşturduğunuz için bir şifreniz yok. Hesabınızı kaybetmemek ve aygıt değiştirdiğinizde tekrar girebilmek için <b>hemen şimdi bir şifre belirleyin!</b></p>
+            <input type="password" id="legacyPass" placeholder="Yeni Şifrenizi Girin" style="background: #f0f0f0; color: #000; border: 1px solid #ccc; text-align: center; font-size: 16px; font-weight: bold;">
+            <button onclick="setLegacyPassword()" style="background: #c00; font-size: 16px;">Şifremi Kaydet ve Korumaya Al</button>
+        </div>
+    </div>
     
     <div class="modal-overlay" id="groupModal">
         <div class="modal" style="width: 450px;">
@@ -270,9 +283,21 @@
         function toggleTheme() { isLightTheme = !isLightTheme; localStorage.setItem('mailmaster_theme', isLightTheme ? 'light' : 'dark'); applyTheme(); }
         function applyTheme() { document.body.classList.toggle('light-theme', isLightTheme); document.getElementById('themeBtn').innerText = isLightTheme ? '🌙' : '☀️'; }
 
-        // BAŞLANGIÇ
-        if (!currentUser) document.getElementById('settingsModal').style.display = 'flex'; 
-        else { initUser(); }
+        // BAŞLANGIÇ VE ŞİFRE KONTROL SİSTEMİ
+        if (!currentUser) {
+            document.getElementById('authModal').style.display = 'flex'; 
+        } else {
+            // Cihazda kayıtlı kullanıcı varsa, veritabanından şifresi var mı diye kontrol et
+            database.ref('users/' + currentUser).once('value').then(snap => {
+                const userData = snap.val();
+                if (userData && !userData.password) {
+                    // Eski sürüm kullanıcısı! Şifresi yok, kırmızı ekranı göster.
+                    document.getElementById('legacyUserModal').style.display = 'flex';
+                } else {
+                    initUser(); // Şifresi var, sorunsuz giriş yap.
+                }
+            });
+        }
 
         function initUser() {
             database.ref('users/' + currentUser).update({ active: true });
@@ -281,13 +306,74 @@
             updateProfileUI(); loadSavedDMs(); loadSavedGroups(); loadMessages();
         }
 
-        function saveUsername() {
-            const val = document.getElementById('newUsernameInput').value.trim();
-            if(val.length < 2) return alert("İsim çok kısa!");
-            database.ref('users/' + val).once('value').then((snap) => {
-                if (snap.exists()) return alert("Bu isim alınmış!");
-                currentUser = val; localStorage.setItem('mailmaster_user', currentUser);
-                document.getElementById('settingsModal').style.display = 'none'; initUser();
+        // SEKMELERİ DEĞİŞTİR (Giriş Yap / Kayıt Ol)
+        function switchAuthTab(tab) {
+            if (tab === 'login') {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('regForm').style.display = 'none';
+                document.getElementById('tabLogin').style.color = 'var(--accent)';
+                document.getElementById('tabReg').style.color = 'var(--text-muted)';
+            } else {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('regForm').style.display = 'block';
+                document.getElementById('tabLogin').style.color = 'var(--text-muted)';
+                document.getElementById('tabReg').style.color = 'var(--accent)';
+            }
+        }
+
+        // GİRİŞ YAPMA FONKSİYONU
+        function handleLogin() {
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            if(!u || !p) return alert("Kullanıcı adı ve şifre boş bırakılamaz!");
+
+            database.ref('users/' + u).once('value').then(snap => {
+                if(!snap.exists()) return alert("Böyle bir kullanıcı bulunamadı!");
+                
+                const userData = snap.val();
+                // Eski kullanıcı başka cihazdan girmeye çalışıyorsa uyar:
+                if(!userData.password) return alert("Bu hesap eski sürüme ait ve şifresi yok. Lütfen hesabın açık olduğu eski cihazınızdan girip hesaba şifre belirleyin!");
+                
+                if(userData.password !== p) return alert("Hatalı şifre!");
+                
+                // Başarılı giriş
+                currentUser = u;
+                localStorage.setItem('mailmaster_user', currentUser);
+                document.getElementById('authModal').style.display = 'none';
+                initUser();
+            });
+        }
+
+        // KAYIT OLMA FONKSİYONU
+        function handleRegister() {
+            const u = document.getElementById('regUser').value.trim();
+            const p = document.getElementById('regPass').value.trim();
+            
+            if(u.length < 3 || p.length < 3) return alert("Kullanıcı adı ve şifre en az 3 karakter olmalı!");
+
+            database.ref('users/' + u).once('value').then(snap => {
+                if (snap.exists()) return alert("Bu kullanıcı adı zaten alınmış!");
+                
+                // Yeni kullanıcıyı şifresiyle beraber kaydet
+                database.ref('users/' + u).set({ password: p, active: true }).then(() => {
+                    currentUser = u; 
+                    localStorage.setItem('mailmaster_user', currentUser);
+                    document.getElementById('authModal').style.display = 'none'; 
+                    initUser();
+                });
+            });
+        }
+
+        // ESKİ KULLANICILARI KURTARMA FONKSİYONU (KIRMIZI EKRAN)
+        function setLegacyPassword() {
+            const p = document.getElementById('legacyPass').value.trim();
+            if(p.length < 3) return alert("Şifre en az 3 karakter olmalı!");
+            
+            // Kullanıcının veritabanına şifresini ekle
+            database.ref('users/' + currentUser).update({ password: p }).then(() => {
+                document.getElementById('legacyUserModal').style.display = 'none';
+                alert("Şifreniz başarıyla kaydedildi! Artık aygıt değiştirdiğinizde bu şifreyle girebilirsiniz.");
+                initUser();
             });
         }
 
