@@ -93,7 +93,6 @@
         .action-btn:hover { color: var(--accent); transform: scale(1.1); }
         .action-btn.del:hover { color: #ff4c4c; }
 
-        /* REAKSİYON (EMOJİ) STİLLERİ */
         .emoji-picker { display: none; position: absolute; bottom: 35px; background: var(--panel-bg); padding: 5px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 100; gap: 5px; border: 1px solid rgba(134,150,160,0.2); }
         .emoji-picker span { cursor: pointer; font-size: 18px; transition: 0.2s; display: inline-block;}
         .emoji-picker span:hover { transform: scale(1.3); }
@@ -113,7 +112,6 @@
         
         .file-attachment { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.1); padding: 12px; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(134,150,160,0.1); }
         
-        /* SES KAYDI MİKROFON STİLLERİ */
         .audio-player { max-width: 250px; height: 40px; border-radius: 20px; outline: none; }
         .mic-btn { transition: 0.2s; user-select: none; -webkit-touch-callout: none; }
         .mic-btn.recording { color: #ff4c4c; animation: pulse 1s infinite; background: rgba(255, 76, 76, 0.2); }
@@ -277,36 +275,55 @@
         let typingTimer, activeReplyData = null;
         const userCache = {};
 
-        // TEMA YÖNETİMİ
         let isLightTheme = localStorage.getItem('mailmaster_theme') === 'light';
         applyTheme();
         function toggleTheme() { isLightTheme = !isLightTheme; localStorage.setItem('mailmaster_theme', isLightTheme ? 'light' : 'dark'); applyTheme(); }
         function applyTheme() { document.body.classList.toggle('light-theme', isLightTheme); document.getElementById('themeBtn').innerText = isLightTheme ? '🌙' : '☀️'; }
 
-        // BAŞLANGIÇ VE ŞİFRE KONTROL SİSTEMİ
+        // BAŞLANGIÇ
         if (!currentUser) {
             document.getElementById('authModal').style.display = 'flex'; 
         } else {
-            // Cihazda kayıtlı kullanıcı varsa, veritabanından şifresi var mı diye kontrol et
             database.ref('users/' + currentUser).once('value').then(snap => {
                 const userData = snap.val();
                 if (userData && !userData.password) {
-                    // Eski sürüm kullanıcısı! Şifresi yok, kırmızı ekranı göster.
                     document.getElementById('legacyUserModal').style.display = 'flex';
                 } else {
-                    initUser(); // Şifresi var, sorunsuz giriş yap.
+                    initUser(); 
                 }
             });
         }
 
+        // YENİ: BULUT (CLOUD) SENKRONİZASYON SİSTEMİ EKLENDİ!
         function initUser() {
             database.ref('users/' + currentUser).update({ active: true });
-            myDMs = JSON.parse(localStorage.getItem('mailmaster_dms_' + currentUser)) || [];
-            myGroups = JSON.parse(localStorage.getItem('mailmaster_groups_' + currentUser)) || [];
-            updateProfileUI(); loadSavedDMs(); loadSavedGroups(); loadMessages();
+            
+            // Kullanıcının Grup ve DM verilerini Firebaseden (Buluttan) Çek
+            database.ref('users/' + currentUser).once('value').then(snap => {
+                const data = snap.val() || {};
+                myDMs = data.dms || [];
+                myGroups = data.groups || [];
+                
+                // ESKİ KULLANICILARI KURTARMA: Eğer cihazın kendi hafızasında grubu varsa ve bulutta yoksa buluta aktar
+                let localDMs = JSON.parse(localStorage.getItem('mailmaster_dms_' + currentUser)) || [];
+                let localGroups = JSON.parse(localStorage.getItem('mailmaster_groups_' + currentUser)) || [];
+                
+                let needsUpdate = false;
+                if(localDMs.length > 0 && myDMs.length === 0) { myDMs = localDMs; needsUpdate = true; }
+                if(localGroups.length > 0 && myGroups.length === 0) { myGroups = localGroups; needsUpdate = true; }
+                
+                if(needsUpdate) {
+                    // Cihazdaki verileri buluta kopyala ki kaybolmasınlar
+                    database.ref('users/' + currentUser).update({ dms: myDMs, groups: myGroups });
+                }
+
+                updateProfileUI(); 
+                loadSavedDMs(); 
+                loadSavedGroups(); 
+                loadMessages();
+            });
         }
 
-        // SEKMELERİ DEĞİŞTİR (Giriş Yap / Kayıt Ol)
         function switchAuthTab(tab) {
             if (tab === 'login') {
                 document.getElementById('loginForm').style.display = 'block';
@@ -321,7 +338,6 @@
             }
         }
 
-        // GİRİŞ YAPMA FONKSİYONU
         function handleLogin() {
             const u = document.getElementById('loginUser').value.trim();
             const p = document.getElementById('loginPass').value.trim();
@@ -329,14 +345,10 @@
 
             database.ref('users/' + u).once('value').then(snap => {
                 if(!snap.exists()) return alert("Böyle bir kullanıcı bulunamadı!");
-                
                 const userData = snap.val();
-                // Eski kullanıcı başka cihazdan girmeye çalışıyorsa uyar:
                 if(!userData.password) return alert("Bu hesap eski sürüme ait ve şifresi yok. Lütfen hesabın açık olduğu eski cihazınızdan girip hesaba şifre belirleyin!");
-                
                 if(userData.password !== p) return alert("Hatalı şifre!");
                 
-                // Başarılı giriş
                 currentUser = u;
                 localStorage.setItem('mailmaster_user', currentUser);
                 document.getElementById('authModal').style.display = 'none';
@@ -344,7 +356,6 @@
             });
         }
 
-        // KAYIT OLMA FONKSİYONU
         function handleRegister() {
             const u = document.getElementById('regUser').value.trim();
             const p = document.getElementById('regPass').value.trim();
@@ -353,8 +364,6 @@
 
             database.ref('users/' + u).once('value').then(snap => {
                 if (snap.exists()) return alert("Bu kullanıcı adı zaten alınmış!");
-                
-                // Yeni kullanıcıyı şifresiyle beraber kaydet
                 database.ref('users/' + u).set({ password: p, active: true }).then(() => {
                     currentUser = u; 
                     localStorage.setItem('mailmaster_user', currentUser);
@@ -364,12 +373,9 @@
             });
         }
 
-        // ESKİ KULLANICILARI KURTARMA FONKSİYONU (KIRMIZI EKRAN)
         function setLegacyPassword() {
             const p = document.getElementById('legacyPass').value.trim();
             if(p.length < 3) return alert("Şifre en az 3 karakter olmalı!");
-            
-            // Kullanıcının veritabanına şifresini ekle
             database.ref('users/' + currentUser).update({ password: p }).then(() => {
                 document.getElementById('legacyUserModal').style.display = 'none';
                 alert("Şifreniz başarıyla kaydedildi! Artık aygıt değiştirdiğinizde bu şifreyle girebilirsiniz.");
@@ -377,7 +383,6 @@
             });
         }
 
-        // PROFİL FOTOĞRAFI
         function getUserProfilePic(username, callback) {
             if(userCache[username]) return callback(userCache[username]);
             database.ref('users/' + username).once('value').then(snap => {
@@ -400,9 +405,9 @@
             }; reader.readAsDataURL(file); e.target.value = '';
         });
 
-        // ODA VE GRUP İŞLEMLERİ
         function openGroupModal() { document.getElementById('groupModal').style.display = 'flex'; }
         function closeGroupModal() { document.getElementById('groupModal').style.display = 'none'; }
+        
         function handleCreateGroup() {
             const n = document.getElementById('newGroupName').value.trim(), p = document.getElementById('newGroupPass').value.trim();
             if(n.length<3 || p.length<3) return alert("En az 3 karakter!");
@@ -416,7 +421,18 @@
                 if(!s.exists()) alert("Grup bulunamadı!"); else if(s.val().password === p) { saveAndAddGroup(n); closeGroupModal(); } else alert("Yanlış şifre!");
             });
         }
-        function saveAndAddGroup(g) { if(!myGroups.includes(g)){ myGroups.push(g); localStorage.setItem('mailmaster_groups_'+currentUser, JSON.stringify(myGroups)); addGroupToList(g); } changeRoom(g, g, false, document.getElementById('room_'+g)); }
+        
+        // YENİ: GRUP EKLENDİĞİNDE BULUTA DA (FIREBASE) KAYDEDER
+        function saveAndAddGroup(g) { 
+            if(!myGroups.includes(g)){ 
+                myGroups.push(g); 
+                localStorage.setItem('mailmaster_groups_'+currentUser, JSON.stringify(myGroups)); 
+                database.ref('users/' + currentUser).update({ groups: myGroups }); // Buluta kaydet
+                addGroupToList(g); 
+            } 
+            changeRoom(g, g, false, document.getElementById('room_'+g)); 
+        }
+        
         function loadSavedGroups() { myGroups.forEach(g => addGroupToList(g)); }
         function addGroupToList(g) {
             if(!document.getElementById("room_"+g)) {
@@ -424,7 +440,6 @@
             }
         }
         
-        // DM İŞLEMLERİ
         function handleUserSearch(e) {
             if(e.key === "Enter") {
                 const v = document.getElementById('userSearchInput').value.trim();
@@ -433,11 +448,18 @@
             }
         }
         function loadSavedDMs() { myDMs.forEach(t => addDMToList([currentUser, t].sort().join("_"), t)); }
+        
+        // YENİ: BİRİYLE DM AÇILDIĞINDA BULUTA DA (FIREBASE) KAYDEDER
         function openDM(t) {
             if(t === currentUser) return; const r = [currentUser, t].sort().join("_");
-            if(!myDMs.includes(t)){ myDMs.push(t); localStorage.setItem('mailmaster_dms_'+currentUser, JSON.stringify(myDMs)); }
+            if(!myDMs.includes(t)){ 
+                myDMs.push(t); 
+                localStorage.setItem('mailmaster_dms_'+currentUser, JSON.stringify(myDMs)); 
+                database.ref('users/' + currentUser).update({ dms: myDMs }); // Buluta kaydet
+            }
             addDMToList(r, t); changeRoom(r, t, true, document.getElementById("dm_"+r));
         }
+        
         function addDMToList(r, t) {
             if(!document.getElementById("dm_"+r)) {
                 document.getElementById('dmList').insertAdjacentHTML('beforeend', `<div class="room-item" id="dm_${r}" onclick="changeRoom('${r}', '${t}', true, this)"><div class="room-icon" id="dm_icon_${t}">👤</div><div class="room-info"><h4>${t}</h4></div></div>`);
@@ -445,14 +467,12 @@
             }
         }
 
-        // ODA DEĞİŞTİR
         function changeRoom(roomId, title, isDM, element) {
             document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active')); if(element) element.classList.add('active');
             document.getElementById('headerTitle').innerText = isDM ? "Gizli Sohbet: " + title : title;
             currentRoom = roomId; cancelReply(); loadMessages();
         }
 
-        // MESAJ YÜKLEME VE RENDER
         function loadMessages() {
             if(currentRoomRef) currentRoomRef.off(); if(typingRef) typingRef.off();
             const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
@@ -464,20 +484,16 @@
                 document.getElementById('typingIndicator').innerText = t.length > 0 ? t.join(', ') + " yazıyor..." : "";
             });
             
-            // Mesaj eklendiğinde
             currentRoomRef.on("child_added", s => {
                 const d = s.val(); if(d) { renderMessage(s.key, d); if(d.sender !== currentUser && d.status !== 'read') currentRoomRef.child(s.key).update({ status: 'read' }); }
             });
 
-            // Mesaj güncellendiğinde (Okundu bilgisi veya EMOJİ reaksiyonu eklendiğinde)
             currentRoomRef.on("child_changed", s => {
                 const d = s.val(), msgRow = document.getElementById("msg-row-" + s.key);
                 if(msgRow) {
-                    // Okundu tiklerini güncelle
                     if(d.sender === currentUser && d.status === 'read') {
                         const tick = msgRow.querySelector('.msg-ticks'); if(tick) tick.style.color = '#53bdeb';
                     }
-                    // Reaksiyonları güncelle
                     updateReactionsDisplay(s.key, d.reactions);
                 }
             });
@@ -490,7 +506,6 @@
             const time = new Date(data.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute:'2-digit' });
             let content = ""; let hasMedia = false;
             
-            // Medya Türleri - İndirme Butonu Eklendi
             if(data.imageUrl) { 
                 hasMedia = true; 
                 content += `
@@ -500,7 +515,6 @@
                 </div>`; 
             }
             
-            // DOSYA/VİDEO/GIF KISMI - İndirme Butonu Eklendi
             if(data.fileUrl && data.fileName) { 
                 hasMedia = true; 
                 const fName = data.fileName.toLowerCase();
@@ -524,13 +538,11 @@
                 }
             }
             
-            // SES KAYDI PLAYER'I
             if(data.audioUrl) {
                 hasMedia = true;
                 content += `<div style="margin-bottom:5px;"><audio controls class="audio-player" src="${data.audioUrl}"></audio></div>`;
             }
 
-            // ARAMA İÇİN SINIF EKLENTİSİ
             if(data.text) content += `<div class="msg-text-content">${data.text}</div>`;
 
             let quote = "";
@@ -539,7 +551,6 @@
             let ticks = isMe ? `<span class="msg-ticks" style="color:${data.status === 'read' ? '#53bdeb' : 'var(--text-muted)'};">✓✓</span>` : "";
             const safeText = data.text ? data.text.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
 
-            // EMOJİ VE YANIT BUTONLARI
             const actions = `
                 <div class="msg-actions">
                     <button class="action-btn" title="Tepki Ver" onclick="toggleEmojiPicker('${id}', this)">😀</button>
@@ -551,7 +562,7 @@
             const row = document.createElement('div');
             row.className = `message-row ${isMe ? 'sent' : 'received'}`;
             row.id = "msg-row-" + id;
-            row.setAttribute('data-text', (data.text || "").toLowerCase()); // Arama için
+            row.setAttribute('data-text', (data.text || "").toLowerCase()); 
             
             row.innerHTML = isMe ? `
                 <div class="message-wrapper sent">
@@ -584,11 +595,9 @@
             area.appendChild(row); area.scrollTop = area.scrollHeight;
             getUserProfilePic(data.sender, p => { const av=document.getElementById('avatar-'+id); if(av&&p){ av.style.background=`url(${p}) center/cover`; av.innerText=""; }});
             
-            // Varsa reaksiyonları yükle
             updateReactionsDisplay(id, data.reactions);
         }
 
-        // MESAJ GÖNDERME
         function sendMessage(img = null, file = null, fName = null, audio = null) {
             const txt = document.getElementById('messageInput').value.trim();
             if(!txt && !img && !file && !audio) return;
@@ -600,31 +609,25 @@
             database.ref('typing/'+currentRoom+'/'+currentUser).remove();
         }
 
-        // YANITLAMA
         function initiateReply(id, s, t, h) { activeReplyData = {id:id, sender:s, snippet: t||(h?"Medya/Ses":"Dosya")}; document.getElementById('replySenderName').innerText=s; document.getElementById('replyTextSnippet').innerText=activeReplyData.snippet; document.getElementById('replyPreview').style.display='flex'; document.getElementById('messageInput').focus(); }
         function cancelReply() { activeReplyData = null; document.getElementById('replyPreview').style.display='none'; }
         
-        // SİLME
         function deleteMessage(id) { if(confirm("Mesaj kalıcı olarak silinsin mi?")) currentRoomRef.child(id).remove(); }
 
-        // INPUT VE TYPING
         document.getElementById("messageInput").addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
         document.getElementById('messageInput').addEventListener('input', () => {
             database.ref('typing/'+currentRoom+'/'+currentUser).set(true);
             clearTimeout(typingTimer); typingTimer = setTimeout(() => database.ref('typing/'+currentRoom+'/'+currentUser).remove(), 2000);
         });
 
-        // DOSYA/RESİM GÖNDERME
         document.getElementById('imageInput').addEventListener('change', e => { const f=e.target.files[0]; if(f){ const r=new FileReader(); r.onload=ev=>sendMessage(ev.target.result); r.readAsDataURL(f); e.target.value=''; }});
         document.getElementById('fileInput').addEventListener('change', e => { const f=e.target.files[0]; if(f){ const r=new FileReader(); r.onload=ev=>sendMessage(null, ev.target.result, f.name); r.readAsDataURL(f); e.target.value=''; }});
 
-        // ========================== YENİ: EMOJİ REAKSİYONLARI ==========================
         let activeEmojiMessageId = null;
         function toggleEmojiPicker(msgId, btnElement) {
             activeEmojiMessageId = msgId;
             const picker = document.getElementById('globalEmojiPicker');
             if(!picker) {
-                // Emoji menüsünü sayfa altına yarat (ilk tıklamada)
                 const div = document.createElement('div');
                 div.id = 'globalEmojiPicker'; div.className = 'emoji-picker';
                 div.innerHTML = `
@@ -637,7 +640,6 @@
                 document.body.appendChild(div);
             }
             const p = document.getElementById('globalEmojiPicker');
-            // Menü yerleşimi
             const rect = btnElement.getBoundingClientRect();
             p.style.display = "flex";
             p.style.left = (rect.left - 50) + "px";
@@ -650,7 +652,6 @@
             document.getElementById('globalEmojiPicker').style.display = "none";
         }
 
-        // Boş bir yere tıklanırsa emoji picker'ı kapat
         document.addEventListener('click', (e) => {
             if(!e.target.closest('.action-btn') && !e.target.closest('.emoji-picker')) {
                 const p = document.getElementById('globalEmojiPicker');
@@ -663,7 +664,6 @@
             if(!container) return;
             if(!reactionsData) { container.style.display = 'none'; return; }
             
-            // Emojileri say (örn: 👍:2, ❤️:1)
             const counts = {};
             Object.values(reactionsData).forEach(emoji => { counts[emoji] = (counts[emoji] || 0) + 1; });
             
@@ -674,7 +674,6 @@
             else { container.style.display = 'none'; }
         }
 
-        // ========================== YENİ: MESAJLARDA ARAMA ==========================
         function searchMessages() {
             const term = document.getElementById('msgSearchInput').value.toLowerCase();
             const rows = document.querySelectorAll('.message-row');
@@ -682,14 +681,13 @@
             rows.forEach(row => {
                 const text = row.getAttribute('data-text');
                 if(term === "") {
-                    row.style.display = "flex"; // Arama yoksa hepsini göster
+                    row.style.display = "flex";
                 } else {
                     if(text && text.includes(term)) {
                         row.style.display = "flex";
-                        // Arama eşleşince balonu parlat
                         const bubble = row.querySelector('.message-bubble');
                         bubble.classList.remove('highlight-msg');
-                        void bubble.offsetWidth; // animasyonu sıfırla
+                        void bubble.offsetWidth;
                         bubble.classList.add('highlight-msg');
                     } else {
                         row.style.display = "none";
@@ -698,24 +696,22 @@
             });
         }
 
-        // ========================== YENİ: SES KAYDI (BAS-KONUŞ) ==========================
         let mediaRecorder;
         let audioChunks = [];
         const micBtn = document.getElementById('micBtn');
 
-        // Mouse (PC) ve Touch (Mobil) eventleri
         micBtn.addEventListener('mousedown', startRecording);
         micBtn.addEventListener('mouseup', stopRecording);
         micBtn.addEventListener('touchstart', startRecording, {passive: false});
         micBtn.addEventListener('touchend', stopRecording);
-        micBtn.addEventListener('touchcancel', stopRecording); // Parmağı kaydırırsa iptal olmasın, göndersin
+        micBtn.addEventListener('touchcancel', stopRecording);
 
         function startRecording(e) {
-            e.preventDefault(); // mobilde sağ tık menüsünü engelle
+            e.preventDefault(); 
             navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
                 mediaRecorder = new MediaRecorder(stream);
                 mediaRecorder.start();
-                micBtn.classList.add('recording'); // Kırmızı yanıp sönme efekti
+                micBtn.classList.add('recording'); 
                 
                 mediaRecorder.addEventListener("dataavailable", event => {
                     audioChunks.push(event.data);
@@ -734,15 +730,12 @@
                 
                 mediaRecorder.addEventListener("stop", () => {
                     const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-                    audioChunks = []; // temizle
-                    
-                    // Çok kısaysa (yanlışlıkla tıklandıysa) gönderme (örn < 500ms)
+                    audioChunks = []; 
                     if(audioBlob.size < 3000) return; 
 
-                    // Blob'u Base64'e çevirip gönder
                     const reader = new FileReader();
                     reader.onload = function(event) {
-                        sendMessage(null, null, null, event.target.result); // audioUrl parametresiyle gönder
+                        sendMessage(null, null, null, event.target.result); 
                     };
                     reader.readAsDataURL(audioBlob);
                 });
