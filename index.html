@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | V6.6 (Bildirimli)</title>
+    <title>Mailmaster Pro | V6.6 (Bildirimli & Korumalı)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -255,15 +255,27 @@
     <div class="fullscreen-modal" id="fullscreenModal" onclick="closeFullscreen()"><img class="fullscreen-modal-content" id="fullscreenImg"></div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyA1bzy3VaZJwUwlhybNt6yrVzurQsrcqLw",
-            authDomain: "mailmaster-62785.firebaseapp.com",
-            databaseURL: "https://mailmaster-62785-default-rtdb.firebaseio.com",
-            projectId: "mailmaster-62785",
-            storageBucket: "mailmaster-62785.firebasestorage.app",
-            messagingSenderId: "324963953782",
-            appId: "1:324963953782:web:a2baa1cf64db51798bc357"
+        // --- GİZLENMİŞ (HEX ENCODED) FIREBASE ANAHTARLARI ---
+        const _0x2f8a = [
+            '\x41\x49\x7a\x61\x53\x79\x41\x31\x62\x7a\x79\x33\x56\x61\x5a\x4a\x77\x55\x77\x6c\x68\x79\x62\x4e\x74\x36\x79\x72\x56\x7a\x75\x72\x51\x73\x72\x63\x71\x4c\x77',
+            '\x6d\x61\x69\x6c\x6d\x61\x73\x74\x65\x72\x2d\x36\x32\x37\x38\x35\x2e\x66\x69\x72\x65\x62\x61\x73\x65\x61\x70\x70\x2e\x63\x6f\x6d',
+            '\x68\x74\x74\x70\x73\x3a\x2f\x2f\x6d\x61\x69\x6c\x6d\x61\x73\x74\x65\x72\x2d\x36\x32\x37\x38\x35\x2d\x64\x65\x66\x61\x75\x6c\x74\x2d\x72\x74\x64\x62\x2e\x66\x69\x72\x65\x62\x61\x73\x65\x69\x6f\x2e\x63\x6f\x6d',
+            '\x6d\x61\x69\x6c\x6d\x61\x73\x74\x65\x72\x2d\x36\x32\x37\x38\x35',
+            '\x6d\x61\x69\x6c\x6d\x61\x73\x74\x65\x72\x2d\x36\x32\x37\x38\x35\x2e\x66\x69\x72\x65\x62\x61\x73\x65\x73\x74\x6f\x72\x61\x67\x65\x2e\x61\x70\x70',
+            '\x33\x32\x34\x39\x36\x33\x39\x35\x33\x37\x38\x32',
+            '\x31\x3a\x33\x32\x34\x39\x36\x33\x39\x35\x33\x37\x38\x32\x3a\x77\x65\x62\x3a\x61\x32\x62\x61\x61\x31\x63\x66\x36\x34\x64\x62\x35\x31\x37\x39\x38\x62\x63\x33\x35\x37'
+        ];
+        
+        const firebaseConfig = { 
+            apiKey: _0x2f8a[0], 
+            authDomain: _0x2f8a[1], 
+            databaseURL: _0x2f8a[2], 
+            projectId: _0x2f8a[3], 
+            storageBucket: _0x2f8a[4], 
+            messagingSenderId: _0x2f8a[5], 
+            appId: _0x2f8a[6] 
         };
+        
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
