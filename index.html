@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | V6.6 (Bildirimli & Korumalı)</title>
+    <title>Mailmaster Pro | V6.7 (Temizle & Çık Özellikli)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -63,10 +63,10 @@
 
         .chat-window { flex-grow: 1; display: flex; flex-direction: column; background-color: var(--chat-bg); position: relative; transition: 0.3s;}
         
-        .chat-header { padding: 15px 25px; background-color: var(--panel-bg); display: flex; align-items: center; gap: 15px; border-bottom: 1px solid rgba(134, 150, 160, 0.15); z-index: 10; transition: 0.3s; justify-content: space-between;}
+        .chat-header { padding: 15px 25px; background-color: var(--panel-bg); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(134, 150, 160, 0.15); z-index: 10; transition: 0.3s;}
         .chat-header-info { display: flex; align-items: center; gap: 15px; }
-        .msg-search-input { padding: 8px 15px; border-radius: 20px; border: none; background: var(--sidebar-bg); color: var(--text-main); outline: none; font-size: 13px; width: 150px; transition: 0.3s; }
-        .msg-search-input:focus { width: 200px; box-shadow: 0 0 5px var(--accent); }
+        .msg-search-input { padding: 8px 15px; border-radius: 20px; border: none; background: var(--sidebar-bg); color: var(--text-main); outline: none; font-size: 13px; width: 130px; transition: 0.3s; }
+        .msg-search-input:focus { width: 180px; box-shadow: 0 0 5px var(--accent); }
 
         .messages-area { flex-grow: 1; padding: 20px 10% 5px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
         .message-row { display: flex; width: 100%; margin-bottom: 5px; align-items: flex-end; gap: 10px; }
@@ -146,8 +146,9 @@
             .msg-actions { opacity: 1 !important; }
             .messages-area { padding: 20px 5% 5px; }
             .chat-header h2 { font-size: 16px; }
-            .msg-search-input { width: 100px; }
-            .msg-search-input:focus { width: 130px; }
+            .msg-search-input { width: 80px; }
+            .msg-search-input:focus { width: 110px; }
+            .header-actions button { padding: 6px 8px; font-size: 11px; }
         }
         
         .highlight-msg { animation: highlightAnim 2s; }
@@ -182,7 +183,11 @@
                 <div class="room-icon" style="background: var(--accent); color: white;" id="headerIcon">#</div>
                 <h2 id="headerTitle">Genel Sohbet</h2>
             </div>
-            <input type="text" class="msg-search-input" id="msgSearchInput" placeholder="🔍 Mesajlarda Ara..." oninput="searchMessages()">
+            <div style="display: flex; gap: 8px; align-items: center;" class="header-actions">
+                <button id="leaveGroupBtn" style="display:none; background:#ff4c4c; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🚪 Çık</button>
+                <button onclick="clearChat()" style="background:var(--panel-bg); color:var(--text-main); border:1px solid rgba(134,150,160,0.2); padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🧹 Temizle</button>
+                <input type="text" class="msg-search-input" id="msgSearchInput" placeholder="🔍 Ara..." oninput="searchMessages()">
+            </div>
         </div>
         
         <div class="messages-area" id="messagesArea"></div>
@@ -414,7 +419,6 @@
             });
         }
 
-        // ESKİ SİSTEM: 5 MB DOSYA VE RESİM SINIRI (BASE64 İLE)
         const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
         document.getElementById('profilePicInput').addEventListener('change', function(e) {
@@ -493,9 +497,25 @@
         }
 
         function changeRoom(roomId, title, isDM, element) {
-            document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active')); if(element) element.classList.add('active');
+            document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active')); 
+            if(element) element.classList.add('active');
+            
             document.getElementById('headerTitle').innerText = isDM ? "Gizli Sohbet: " + title : title;
-            currentRoom = roomId; cancelReply(); loadMessages();
+            currentRoom = roomId; 
+            
+            // "Gruptan Çık" butonunu sadece özel gruplarda göster
+            const leaveBtn = document.getElementById('leaveGroupBtn');
+            if (leaveBtn) {
+                if (!isDM && roomId !== 'genel' && roomId !== 'yazilim') {
+                    leaveBtn.style.display = 'block';
+                    leaveBtn.onclick = leaveCurrentGroup;
+                } else {
+                    leaveBtn.style.display = 'none';
+                }
+            }
+            
+            cancelReply(); 
+            loadMessages();
         }
 
         function loadMessages() {
@@ -508,6 +528,7 @@
                 document.getElementById('typingIndicator').innerText = t.length > 0 ? t.join(', ') + " yazıyor..." : "";
             });
             
+            // Limit uygulanmadı, tüm geçmişi çekiyor. Performans sorunu yaşarsanız buraya limitToLast(50) eklenebilir.
             currentRoomRef.on("child_added", s => { 
                 const d = s.val(); 
                 if(d) { 
@@ -645,6 +666,33 @@
 
         function openFullscreen(src) { document.getElementById("fullscreenImg").src=src; document.getElementById("fullscreenModal").style.display="flex"; }
         function closeFullscreen() { document.getElementById("fullscreenModal").style.display="none"; }
+        
+        // --- YENİ EKLENEN ÖZELLİKLER: SOHBETİ TEMİZLE VE GRUPTAN ÇIK ---
+
+        function clearChat() {
+            if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) {
+                database.ref("rooms/" + currentRoom).remove().then(() => {
+                    document.getElementById('messagesArea').innerHTML = "";
+                    alert("Sohbet tertemiz oldu! 🧹");
+                });
+            }
+        }
+
+        function leaveCurrentGroup() {
+            if(confirm("Bu gruptan çıkmak istediğine emin misin?")) {
+                // Grubu kullanıcının listesinden çıkar
+                myGroups = myGroups.filter(g => g !== currentRoom);
+                localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups));
+                database.ref('users/' + currentUser).update({ groups: myGroups });
+                
+                // Sol menüden sil
+                const roomElement = document.getElementById("room_" + currentRoom);
+                if(roomElement) roomElement.remove();
+                
+                // Genel sohbete geri dön
+                changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); 
+            }
+        }
     </script>
 </body>
 </html>
