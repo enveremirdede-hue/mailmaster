@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | V6.7 (Temizle & Çık Özellikli)</title>
+    <title>Mailmaster Pro | V7.0 (Arka Plan Bildirimli)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
 
     <style>
         /* --- TASARIM (CSS) --- */
@@ -29,16 +30,13 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', system-ui, sans-serif; }
-        
         body { display: flex; height: 100vh; height: 100dvh; background-color: var(--bg-dark); color: var(--text-main); overflow: hidden; transition: background-color 0.3s, color 0.3s; }
-
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: rgba(134, 150, 160, 0.3); border-radius: 10px; }
 
         .sidebar { width: 320px; background-color: var(--sidebar-bg); border-right: 1px solid rgba(134, 150, 160, 0.15); display: flex; flex-direction: column; z-index: 5; transition: 0.3s;}
         .profile-section { padding: 20px; background-color: var(--panel-bg); display: flex; align-items: center; gap: 10px; border-bottom: 1px solid rgba(134, 150, 160, 0.15); transition: 0.3s;}
-        
         .avatar { width: 50px; height: 50px; background: linear-gradient(135deg, var(--accent), #007bb5); border-radius: 50%; display: flex; justify-content: center; align-items: center; font-size: 20px; font-weight: bold; color: white; text-transform: uppercase; cursor: pointer; background-size: cover; background-position: center; transition: 0.2s; box-shadow: 0 0 5px rgba(0,0,0,0.5); flex-shrink: 0;}
         .avatar:hover { opacity: 0.8; transform: scale(1.05); }
         .profile-info { flex-grow: 1; overflow: hidden; }
@@ -62,7 +60,6 @@
         .room-item.active .room-icon { background-color: var(--accent); color: white; }
 
         .chat-window { flex-grow: 1; display: flex; flex-direction: column; background-color: var(--chat-bg); position: relative; transition: 0.3s;}
-        
         .chat-header { padding: 15px 25px; background-color: var(--panel-bg); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(134, 150, 160, 0.15); z-index: 10; transition: 0.3s;}
         .chat-header-info { display: flex; align-items: center; gap: 15px; }
         .msg-search-input { padding: 8px 15px; border-radius: 20px; border: none; background: var(--sidebar-bg); color: var(--text-main); outline: none; font-size: 13px; width: 130px; transition: 0.3s; }
@@ -73,11 +70,9 @@
         .message-row.sent { justify-content: flex-end; } 
         .message-row.received { justify-content: flex-start; }
         .msg-avatar { width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #007bb5); color: white; display: flex; justify-content: center; align-items: center; font-size: 13px; font-weight: bold; flex-shrink: 0; background-size: cover; background-position: center;}
-
         .message-wrapper { display: flex; flex-direction: column; max-width: 65%; min-width: 0; position: relative; }
         .message-wrapper.received { align-items: flex-start; }
         .message-wrapper.sent { align-items: flex-end; }
-        
         .message-sender { font-size: 12px; color: var(--accent); margin-bottom: 4px; font-weight: bold; margin-left: 5px; cursor: pointer; }
         .message-wrapper.sent .message-sender { display: none; }
         .message-content-group { display: flex; align-items: center; gap: 8px; position: relative; max-width: 100%; }
@@ -96,23 +91,20 @@
         .emoji-picker { display: none; position: absolute; bottom: 35px; background: var(--panel-bg); padding: 5px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 100; gap: 5px; border: 1px solid rgba(134,150,160,0.2); }
         .emoji-picker span { cursor: pointer; font-size: 18px; transition: 0.2s; display: inline-block;}
         .emoji-picker span:hover { transform: scale(1.3); }
-        
         .reaction-display { position: absolute; bottom: -12px; right: 10px; background: var(--panel-bg); border: 1px solid rgba(134,150,160,0.2); border-radius: 10px; padding: 2px 6px; font-size: 12px; display: flex; gap: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); z-index: 2; cursor: pointer;}
         .message-wrapper.received .reaction-display { left: 10px; right: auto; }
 
         .quoted-box { background-color: var(--quote-bg); border-left: 4px solid var(--accent); border-radius: 6px; padding: 6px 10px; margin-bottom: 8px; cursor: pointer; font-size: 13.5px; overflow: hidden; display: block; }
         .quote-sender { font-size: 11.5px; color: var(--accent); font-weight: bold; margin-bottom: 2px; }
-        
         .message-meta { display: flex; justify-content: flex-end; align-items: center; gap: 5px; margin-top: 3px; }
         .message-time { font-size: 11px; color: var(--text-muted); opacity: 0.8; }
         .msg-ticks { font-size: 12px; font-weight: bold; transition: color 0.3s; }
 
         .image-container { position: relative; display: inline-block; max-width: 100%; margin-bottom: 5px; }
         .chat-image { max-width: 100%; border-radius: 8px; max-height: 300px; object-fit: cover; cursor: zoom-in; display: block; }
-        
         .file-attachment { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.1); padding: 12px; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(134,150,160,0.1); }
-        
         .audio-player { max-width: 250px; height: 40px; border-radius: 20px; outline: none; }
+        
         .mic-btn { transition: 0.2s; user-select: none; -webkit-touch-callout: none; }
         .mic-btn.recording { color: #ff4c4c; animation: pulse 1s infinite; background: rgba(255, 76, 76, 0.2); }
         @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.15);} 100% {transform: scale(1);} }
@@ -138,7 +130,6 @@
         .fullscreen-modal-content { max-width: 90%; max-height: 85dvh; border-radius: 8px; }
         
         .group-card { background: var(--sidebar-bg); border: 1px solid rgba(134,150,160,0.2); padding: 20px; border-radius: 10px; margin-bottom: 15px; text-align: left;}
-        
         .download-btn { display: inline-block; margin-top: 5px; padding: 5px 10px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-size: 12px; font-weight: bold; }
         .download-btn:hover { background-color: #45a049; }
 
@@ -205,12 +196,9 @@
             <div class="input-area">
                 <input type="file" id="imageInput" accept="image/*" style="display: none;">
                 <input type="file" id="fileInput" accept="*" style="display: none;">
-                
                 <button class="icon-btn" onclick="document.getElementById('fileInput').click()" title="Dosya Gönder">📎</button>
                 <button class="icon-btn" onclick="document.getElementById('imageInput').click()" title="Fotoğraf Gönder">📷</button>
-                
                 <button class="icon-btn mic-btn" id="micBtn" title="Basılı Tutarak Konuş">🎤</button>
-                
                 <input type="text" id="messageInput" placeholder="Bir mesaj yazın..." autocomplete="off">
                 <button class="send-btn" onclick="sendMessage()">➤</button>
             </div>
@@ -223,13 +211,11 @@
                 <h3 id="tabLogin" style="cursor: pointer; color: var(--accent); transition: 0.3s;" onclick="switchAuthTab('login')">Giriş Yap</h3>
                 <h3 id="tabReg" style="cursor: pointer; color: var(--text-muted); transition: 0.3s;" onclick="switchAuthTab('reg')">Kayıt Ol</h3>
             </div>
-            
             <div id="loginForm">
                 <input type="text" id="loginUser" placeholder="Kullanıcı Adı">
                 <input type="password" id="loginPass" placeholder="Şifre">
                 <button onclick="handleLogin()">Giriş Yap</button>
             </div>
-            
             <div id="regForm" style="display: none;">
                 <input type="text" id="regUser" placeholder="Kullanıcı Adı Seçin">
                 <input type="password" id="regPass" placeholder="Şifre Belirleyin">
@@ -242,9 +228,9 @@
         <div class="modal" style="background: #fff; color: #333; text-align: center;">
             <h2 style="color: #c00; font-size: 24px;">⚠️ DİKKAT!</h2>
             <h3 style="color: #333; margin-top: 10px;">Şifreniz Bulunmuyor</h3>
-            <p style="margin: 15px 0; font-size: 14.5px; color: #555; line-height: 1.5;">Hesabınızı eski sürümde oluşturduğunuz için bir şifreniz yok. Hesabınızı kaybetmemek ve aygıt değiştirdiğinizde tekrar girebilmek için <b>hemen şimdi bir şifre belirleyin!</b></p>
+            <p style="margin: 15px 0; font-size: 14.5px; color: #555; line-height: 1.5;">Hesabınızı eski sürümde oluşturduğunuz için şifreniz yok. <b>Hemen şimdi bir şifre belirleyin!</b></p>
             <input type="password" id="legacyPass" placeholder="Yeni Şifrenizi Girin" style="background: #f0f0f0; color: #000; border: 1px solid #ccc; text-align: center; font-size: 16px; font-weight: bold;">
-            <button onclick="setLegacyPassword()" style="background: #c00; font-size: 16px;">Şifremi Kaydet ve Korumaya Al</button>
+            <button onclick="setLegacyPassword()" style="background: #c00; font-size: 16px;">Şifremi Kaydet</button>
         </div>
     </div>
     
@@ -260,7 +246,6 @@
     <div class="fullscreen-modal" id="fullscreenModal" onclick="closeFullscreen()"><img class="fullscreen-modal-content" id="fullscreenImg"></div>
 
     <script>
-        // --- GİZLENMİŞ (HEX ENCODED) FIREBASE ANAHTARLARI ---
         const _0x2f8a = [
             '\x41\x49\x7a\x61\x53\x79\x41\x31\x62\x7a\x79\x33\x56\x61\x5a\x4a\x77\x55\x77\x6c\x68\x79\x62\x4e\x74\x36\x79\x72\x56\x7a\x75\x72\x51\x73\x72\x63\x71\x4c\x77',
             '\x6d\x61\x69\x6c\x6d\x61\x73\x74\x65\x72\x2d\x36\x32\x37\x38\x35\x2e\x66\x69\x72\x65\x62\x61\x73\x65\x61\x70\x70\x2e\x63\x6f\x6d',
@@ -272,17 +257,35 @@
         ];
         
         const firebaseConfig = { 
-            apiKey: _0x2f8a[0], 
-            authDomain: _0x2f8a[1], 
-            databaseURL: _0x2f8a[2], 
-            projectId: _0x2f8a[3], 
-            storageBucket: _0x2f8a[4], 
-            messagingSenderId: _0x2f8a[5], 
-            appId: _0x2f8a[6] 
+            apiKey: _0x2f8a[0], authDomain: _0x2f8a[1], databaseURL: _0x2f8a[2], 
+            projectId: _0x2f8a[3], storageBucket: _0x2f8a[4], messagingSenderId: _0x2f8a[5], appId: _0x2f8a[6] 
         };
         
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+
+        // --- ARKA PLAN BİLDİRİM (FCM) SİSTEMİ ---
+        const messaging = firebase.messaging();
+
+        function requestNotificationPermission() {
+            messaging.getToken({ vapidKey: 'BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ' })
+            .then((currentToken) => {
+                if (currentToken) {
+                    console.log("Bildirim Tokeni Alındı:", currentToken);
+                    database.ref('users/' + currentUser).update({ fcmToken: currentToken });
+                } else {
+                    console.log('Bildirim izni alınamadı.');
+                }
+            }).catch((err) => {
+                console.log('Bildirim Tokeni alınırken hata:', err);
+            });
+        }
+
+        messaging.onMessage((payload) => {
+            console.log('Ön planda mesaj alındı: ', payload);
+            showDesktopNotification(payload.data?.title || "Yeni Mesaj", payload.data?.body || "Sana bir mesaj geldi.");
+        });
+        // ----------------------------------------
 
         let currentUser = localStorage.getItem('mailmaster_user');
         let currentRoom = 'genel';
@@ -291,21 +294,16 @@
         let myDMs = [], myGroups = [];
         let typingTimer, activeReplyData = null;
         const userCache = {};
-        
-        // BİLDİRİM İÇİN YÜKLENME ZAMANI
         const pageLoadTime = Date.now();
+        let audioCtx;
 
         let isLightTheme = localStorage.getItem('mailmaster_theme') === 'light';
         applyTheme();
         function toggleTheme() { isLightTheme = !isLightTheme; localStorage.setItem('mailmaster_theme', isLightTheme ? 'light' : 'dark'); applyTheme(); }
         function applyTheme() { document.body.classList.toggle('light-theme', isLightTheme); document.getElementById('themeBtn').innerText = isLightTheme ? '🌙' : '☀️'; }
 
-        // BİLDİRİM SESİ VE İZİNLERİ
-        let audioCtx;
         document.addEventListener('click', function() {
-            if (Notification.permission !== "granted" && Notification.permission !== "denied") {
-                Notification.requestPermission();
-            }
+            if (Notification.permission !== "granted" && Notification.permission !== "denied") { Notification.requestPermission(); }
             if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
         }, { once: true });
 
@@ -313,40 +311,35 @@
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 if (audioCtx.state === 'suspended') audioCtx.resume();
-                const osc = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, audioCtx.currentTime); // Ses tonu
-                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime); // Ses seviyesi
-                osc.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.15); // Sesin uzunluğu
+                const osc = audioCtx.createOscillator(); const gainNode = audioCtx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.connect(gainNode); gainNode.connect(audioCtx.destination);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.15);
             } catch(e) {}
         }
 
         function showDesktopNotification(sender, text) {
             if (Notification.permission === "granted") {
-                const notif = new Notification("Yeni Mesaj: " + sender, {
-                    body: text,
-                    icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png"
-                });
+                const notif = new Notification("Yeni Mesaj: " + sender, { body: text, icon: "https://cdn-icons-png.flaticon.com/512/733/733585.png" });
                 notif.onclick = function() { window.focus(); this.close(); };
             }
         }
 
-        if (!currentUser) {
-            document.getElementById('authModal').style.display = 'flex'; 
+        if (!currentUser) { document.getElementById('authModal').style.display = 'flex'; 
         } else {
             database.ref('users/' + currentUser).once('value').then(snap => {
                 const userData = snap.val();
-                if (userData && !userData.password) document.getElementById('legacyUserModal').style.display = 'flex';
-                else initUser(); 
+                if (userData && !userData.password) document.getElementById('legacyUserModal').style.display = 'flex'; else initUser(); 
             });
         }
 
         function initUser() {
             database.ref('users/' + currentUser).update({ active: true });
+            
+            // BURASI ÇOK ÖNEMLİ: Cihaz bildirim izni alıyor!
+            requestNotificationPermission();
+
             database.ref('users/' + currentUser).once('value').then(snap => {
                 const data = snap.val() || {};
                 myDMs = data.dms || []; myGroups = data.groups || [];
@@ -356,19 +349,13 @@
                 if(localDMs.length > 0 && myDMs.length === 0) { myDMs = localDMs; needsUpdate = true; }
                 if(localGroups.length > 0 && myGroups.length === 0) { myGroups = localGroups; needsUpdate = true; }
                 if(needsUpdate) database.ref('users/' + currentUser).update({ dms: myDMs, groups: myGroups });
-
                 updateProfileUI(); loadSavedDMs(); loadSavedGroups(); loadMessages();
             });
         }
 
         function switchAuthTab(tab) {
-            if (tab === 'login') {
-                document.getElementById('loginForm').style.display = 'block'; document.getElementById('regForm').style.display = 'none';
-                document.getElementById('tabLogin').style.color = 'var(--accent)'; document.getElementById('tabReg').style.color = 'var(--text-muted)';
-            } else {
-                document.getElementById('loginForm').style.display = 'none'; document.getElementById('regForm').style.display = 'block';
-                document.getElementById('tabLogin').style.color = 'var(--text-muted)'; document.getElementById('tabReg').style.color = 'var(--accent)';
-            }
+            if (tab === 'login') { document.getElementById('loginForm').style.display = 'block'; document.getElementById('regForm').style.display = 'none'; document.getElementById('tabLogin').style.color = 'var(--accent)'; document.getElementById('tabReg').style.color = 'var(--text-muted)'; } 
+            else { document.getElementById('loginForm').style.display = 'none'; document.getElementById('regForm').style.display = 'block'; document.getElementById('tabLogin').style.color = 'var(--text-muted)'; document.getElementById('tabReg').style.color = 'var(--accent)'; }
         }
 
         function handleLogin() {
@@ -376,9 +363,8 @@
             if(!u || !p) return alert("Boş bırakılamaz!");
             database.ref('users/' + u).once('value').then(snap => {
                 if(!snap.exists()) return alert("Kullanıcı bulunamadı!");
-                const userData = snap.val();
-                if(!userData.password) return alert("Hesap şifresiz, eski cihazdan girin!");
-                if(userData.password !== p) return alert("Hatalı şifre!");
+                if(!snap.val().password) return alert("Hesap şifresiz, eski cihazdan girin!");
+                if(snap.val().password !== p) return alert("Hatalı şifre!");
                 currentUser = u; localStorage.setItem('mailmaster_user', currentUser);
                 document.getElementById('authModal').style.display = 'none'; initUser();
             });
@@ -389,26 +375,19 @@
             if(u.length < 3 || p.length < 3) return alert("En az 3 karakter!");
             database.ref('users/' + u).once('value').then(snap => {
                 if (snap.exists()) return alert("Kullanıcı adı alınmış!");
-                database.ref('users/' + u).set({ password: p, active: true }).then(() => {
-                    currentUser = u; localStorage.setItem('mailmaster_user', currentUser);
-                    document.getElementById('authModal').style.display = 'none'; initUser();
-                });
+                database.ref('users/' + u).set({ password: p, active: true }).then(() => { currentUser = u; localStorage.setItem('mailmaster_user', currentUser); document.getElementById('authModal').style.display = 'none'; initUser(); });
             });
         }
 
         function setLegacyPassword() {
             const p = document.getElementById('legacyPass').value.trim();
             if(p.length < 3) return alert("En az 3 karakter!");
-            database.ref('users/' + currentUser).update({ password: p }).then(() => {
-                document.getElementById('legacyUserModal').style.display = 'none'; alert("Kaydedildi!"); initUser();
-            });
+            database.ref('users/' + currentUser).update({ password: p }).then(() => { document.getElementById('legacyUserModal').style.display = 'none'; alert("Kaydedildi!"); initUser(); });
         }
 
         function getUserProfilePic(username, callback) {
             if(userCache[username]) return callback(userCache[username]);
-            database.ref('users/' + username).once('value').then(snap => {
-                const pic = snap.val()?.profilePic || null; userCache[username] = pic; callback(pic);
-            });
+            database.ref('users/' + username).once('value').then(snap => { const pic = snap.val()?.profilePic || null; userCache[username] = pic; callback(pic); });
         }
         function updateProfileUI() {
             document.getElementById('displayUsername').innerText = currentUser;
@@ -419,34 +398,19 @@
             });
         }
 
-        const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
-
+        const MAX_FILE_SIZE = 5 * 1024 * 1024;
         document.getElementById('profilePicInput').addEventListener('change', function(e) {
             const file = e.target.files[0]; if(!file) return;
-            if(file.size > MAX_FILE_SIZE) { e.target.value=''; return alert("⚠️ Hata: Fotoğraf 5 MB'dan büyük olamaz!"); }
-            const reader = new FileReader(); reader.onload = ev => {
-                database.ref('users/' + currentUser).update({ profilePic: ev.target.result }).then(() => { userCache[currentUser] = ev.target.result; updateProfileUI(); });
-            }; reader.readAsDataURL(file); e.target.value = '';
+            if(file.size > MAX_FILE_SIZE) { e.target.value=''; return alert("Fotoğraf 5 MB'dan büyük olamaz!"); }
+            const reader = new FileReader(); reader.onload = ev => { database.ref('users/' + currentUser).update({ profilePic: ev.target.result }).then(() => { userCache[currentUser] = ev.target.result; updateProfileUI(); }); }; reader.readAsDataURL(file); e.target.value = '';
         });
 
         document.getElementById('imageInput').addEventListener('change', e => { 
-            const f = e.target.files[0]; 
-            if(f){ 
-                if(f.size > MAX_FILE_SIZE) { e.target.value=''; return alert("⚠️ Hata: Fotoğraf 5 MB'dan büyük olamaz!"); }
-                const r = new FileReader(); 
-                r.onload = ev => sendMessage(ev.target.result); 
-                r.readAsDataURL(f); e.target.value=''; 
-            }
+            const f = e.target.files[0]; if(f){ if(f.size > MAX_FILE_SIZE) { e.target.value=''; return alert("Fotoğraf 5 MB sınırını aştı!"); } const r = new FileReader(); r.onload = ev => sendMessage(ev.target.result); r.readAsDataURL(f); e.target.value=''; }
         });
 
         document.getElementById('fileInput').addEventListener('change', e => { 
-            const f = e.target.files[0]; 
-            if(f){ 
-                if(f.size > MAX_FILE_SIZE) { e.target.value=''; return alert("⚠️ Hata: Dosya 5 MB'dan büyük olamaz!"); }
-                const r = new FileReader(); 
-                r.onload = ev => sendMessage(null, ev.target.result, f.name); 
-                r.readAsDataURL(f); e.target.value=''; 
-            }
+            const f = e.target.files[0]; if(f){ if(f.size > MAX_FILE_SIZE) { e.target.value=''; return alert("Dosya 5 MB sınırını aştı!"); } const r = new FileReader(); r.onload = ev => sendMessage(null, ev.target.result, f.name); r.readAsDataURL(f); e.target.value=''; }
         });
 
         function openGroupModal() { document.getElementById('groupModal').style.display = 'flex'; }
@@ -455,15 +419,11 @@
         function handleCreateGroup() {
             const n = document.getElementById('newGroupName').value.trim(), p = document.getElementById('newGroupPass').value.trim();
             if(n.length<3 || p.length<3) return alert("En az 3 karakter!");
-            database.ref('group_metadata/'+n).once('value').then(s => {
-                if(s.exists()) alert("Grup adı alınmış!"); else database.ref('group_metadata/'+n).set({password:p}).then(()=>{ saveAndAddGroup(n); closeGroupModal(); });
-            });
+            database.ref('group_metadata/'+n).once('value').then(s => { if(s.exists()) alert("Grup adı alınmış!"); else database.ref('group_metadata/'+n).set({password:p}).then(()=>{ saveAndAddGroup(n); closeGroupModal(); }); });
         }
         function handleJoinGroup() {
             const n = document.getElementById('joinGroupName').value.trim(), p = document.getElementById('joinGroupPass').value.trim();
-            database.ref('group_metadata/'+n).once('value').then(s => {
-                if(!s.exists()) alert("Bulunamadı!"); else if(s.val().password === p) { saveAndAddGroup(n); closeGroupModal(); } else alert("Yanlış şifre!");
-            });
+            database.ref('group_metadata/'+n).once('value').then(s => { if(!s.exists()) alert("Bulunamadı!"); else if(s.val().password === p) { saveAndAddGroup(n); closeGroupModal(); } else alert("Yanlış şifre!"); });
         }
         
         function saveAndAddGroup(g) { 
@@ -500,22 +460,11 @@
             document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active')); 
             if(element) element.classList.add('active');
             
-            document.getElementById('headerTitle').innerText = isDM ? "Gizli Sohbet: " + title : title;
-            currentRoom = roomId; 
+            document.getElementById('headerTitle').innerText = isDM ? "Gizli Sohbet: " + title : title; currentRoom = roomId; 
             
-            // "Gruptan Çık" butonunu sadece özel gruplarda göster
             const leaveBtn = document.getElementById('leaveGroupBtn');
-            if (leaveBtn) {
-                if (!isDM && roomId !== 'genel' && roomId !== 'yazilim') {
-                    leaveBtn.style.display = 'block';
-                    leaveBtn.onclick = leaveCurrentGroup;
-                } else {
-                    leaveBtn.style.display = 'none';
-                }
-            }
-            
-            cancelReply(); 
-            loadMessages();
+            if (leaveBtn) { if (!isDM && roomId !== 'genel' && roomId !== 'yazilim') { leaveBtn.style.display = 'block'; leaveBtn.onclick = leaveCurrentGroup; } else { leaveBtn.style.display = 'none'; } }
+            cancelReply(); loadMessages();
         }
 
         function loadMessages() {
@@ -523,63 +472,42 @@
             const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
             currentRoomRef = database.ref("rooms/" + currentRoom); typingRef = database.ref("typing/" + currentRoom);
 
-            typingRef.on("value", s => {
-                const t = []; s.forEach(c => { if(c.key !== currentUser && c.val() === true) t.push(c.key); });
-                document.getElementById('typingIndicator').innerText = t.length > 0 ? t.join(', ') + " yazıyor..." : "";
-            });
+            typingRef.on("value", s => { const t = []; s.forEach(c => { if(c.key !== currentUser && c.val() === true) t.push(c.key); }); document.getElementById('typingIndicator').innerText = t.length > 0 ? t.join(', ') + " yazıyor..." : ""; });
             
-            // Limit uygulanmadı, tüm geçmişi çekiyor. Performans sorunu yaşarsanız buraya limitToLast(50) eklenebilir.
             currentRoomRef.on("child_added", s => { 
                 const d = s.val(); 
                 if(d) { 
                     renderMessage(s.key, d); 
                     if(d.sender !== currentUser && d.status !== 'read') {
                         currentRoomRef.child(s.key).update({ status: 'read' });
-                        
-                        // YENİ MESAJ GELDİĞİNDE BİLDİRİM VE SES ÇALIŞTIRMA
                         if (d.timestamp > pageLoadTime) {
-                            if (document.hidden) {
-                                let notifText = d.text ? d.text : (d.imageUrl ? "📷 Fotoğraf gönderdi" : "📁 Dosya/Ses gönderdi");
-                                showDesktopNotification(d.sender, notifText);
-                            }
+                            if (document.hidden) { let notifText = d.text ? d.text : (d.imageUrl ? "📷 Fotoğraf" : "📁 Dosya/Ses"); showDesktopNotification(d.sender, notifText); }
                             playNotificationSound();
                         }
                     } 
                 } 
             });
-            currentRoomRef.on("child_changed", s => {
-                const d = s.val(), msgRow = document.getElementById("msg-row-" + s.key);
-                if(msgRow) {
-                    if(d.sender === currentUser && d.status === 'read') { const tick = msgRow.querySelector('.msg-ticks'); if(tick) tick.style.color = '#53bdeb'; }
-                    updateReactionsDisplay(s.key, d.reactions);
-                }
-            });
+            currentRoomRef.on("child_changed", s => { const d = s.val(), msgRow = document.getElementById("msg-row-" + s.key); if(msgRow) { if(d.sender === currentUser && d.status === 'read') { const tick = msgRow.querySelector('.msg-ticks'); if(tick) tick.style.color = '#53bdeb'; } updateReactionsDisplay(s.key, d.reactions); } });
             currentRoomRef.on("child_removed", s => { const r = document.getElementById("msg-row-" + s.key); if(r) r.remove(); });
         }
 
         function renderMessage(id, data) {
-            const isMe = (data.sender === currentUser);
-            const time = new Date(data.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute:'2-digit' });
+            const isMe = (data.sender === currentUser); const time = new Date(data.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute:'2-digit' });
             let content = ""; let hasMedia = false;
             
             if(data.imageUrl) { hasMedia = true; content += `<div class="image-container"><img src="${data.imageUrl}" class="chat-image" onclick="openFullscreen(this.src)" /><br><a href="${data.imageUrl}" download class="download-btn">⬇️ İndir</a></div>`; }
-            
             if(data.fileUrl && data.fileName) { 
                 hasMedia = true; const fName = data.fileName.toLowerCase();
-                if(fName.endsWith('.mp4') || fName.endsWith('.webm') || fName.endsWith('.mov')) {
-                    content += `<div style="margin-bottom:5px;"><video controls style="max-width: 100%; border-radius: 8px; max-height: 300px;" src="${data.fileUrl}"></video><br><a href="${data.fileUrl}" download class="download-btn">⬇️ İndir</a></div>`;
-                } else if (fName.endsWith('.gif')) {
-                    content += `<div class="image-container"><img src="${data.fileUrl}" class="chat-image" onclick="openFullscreen(this.src)" /><br><a href="${data.fileUrl}" download class="download-btn">⬇️ İndir</a></div>`;
-                } else { content += `<div class="file-attachment">📄 <a href="${data.fileUrl}" download="${data.fileName}" style="color:var(--accent); font-weight:bold;">${data.fileName} İndir</a></div>`; }
+                if(fName.endsWith('.mp4') || fName.endsWith('.webm') || fName.endsWith('.mov')) { content += `<div style="margin-bottom:5px;"><video controls style="max-width: 100%; border-radius: 8px; max-height: 300px;" src="${data.fileUrl}"></video><br><a href="${data.fileUrl}" download class="download-btn">⬇️ İndir</a></div>`; } 
+                else if (fName.endsWith('.gif')) { content += `<div class="image-container"><img src="${data.fileUrl}" class="chat-image" onclick="openFullscreen(this.src)" /><br><a href="${data.fileUrl}" download class="download-btn">⬇️ İndir</a></div>`; } 
+                else { content += `<div class="file-attachment">📄 <a href="${data.fileUrl}" download="${data.fileName}" style="color:var(--accent); font-weight:bold;">${data.fileName} İndir</a></div>`; }
             }
-            
             if(data.audioUrl) { hasMedia = true; content += `<div style="margin-bottom:5px;"><audio controls class="audio-player" src="${data.audioUrl}"></audio></div>`; }
             if(data.text) content += `<div class="msg-text-content">${data.text}</div>`;
 
             let quote = ""; if (data.replyTo) quote = `<div class="quoted-box" onclick="document.getElementById('msg-row-${data.replyTo.id}').scrollIntoView({behavior:'smooth', block:'center'})"><div class="quote-sender">${data.replyTo.sender}</div><div style="font-size:12px;opacity:0.8;">${data.replyTo.snippet}</div></div>`;
             let ticks = isMe ? `<span class="msg-ticks" style="color:${data.status === 'read' ? '#53bdeb' : 'var(--text-muted)'};">✓✓</span>` : "";
             const safeText = data.text ? data.text.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
-
             const actions = `<div class="msg-actions"><button class="action-btn" title="Tepki Ver" onclick="toggleEmojiPicker('${id}', this)">😀</button><button class="action-btn" title="Yanıtla" onclick="initiateReply('${id}', '${data.sender}', '${safeText}', ${hasMedia})">↩️</button>${isMe ? `<button class="action-btn del" onclick="deleteMessage('${id}')">🗑️</button>` : ''}</div>`;
 
             const row = document.createElement('div'); row.className = `message-row ${isMe ? 'sent' : 'received'}`; row.id = "msg-row-" + id; row.setAttribute('data-text', (data.text || "").toLowerCase()); 
@@ -611,11 +539,7 @@
         let activeEmojiMessageId = null;
         function toggleEmojiPicker(msgId, btnElement) {
             activeEmojiMessageId = msgId; const picker = document.getElementById('globalEmojiPicker');
-            if(!picker) {
-                const div = document.createElement('div'); div.id = 'globalEmojiPicker'; div.className = 'emoji-picker';
-                div.innerHTML = `<span onclick="sendReaction('👍')">👍</span><span onclick="sendReaction('❤️')">❤️</span><span onclick="sendReaction('😂')">😂</span><span onclick="sendReaction('😲')">😲</span><span onclick="sendReaction('😢')">😢</span>`;
-                document.body.appendChild(div);
-            }
+            if(!picker) { const div = document.createElement('div'); div.id = 'globalEmojiPicker'; div.className = 'emoji-picker'; div.innerHTML = `<span onclick="sendReaction('👍')">👍</span><span onclick="sendReaction('❤️')">❤️</span><span onclick="sendReaction('😂')">😂</span><span onclick="sendReaction('😲')">😲</span><span onclick="sendReaction('😢')">😢</span>`; document.body.appendChild(div); }
             const p = document.getElementById('globalEmojiPicker'); const rect = btnElement.getBoundingClientRect(); p.style.display = "flex"; p.style.left = (rect.left - 50) + "px"; p.style.top = (rect.top - 45) + "px";
         }
         function sendReaction(emoji) { if(!activeEmojiMessageId) return; currentRoomRef.child(activeEmojiMessageId).child('reactions').child(currentUser).set(emoji); document.getElementById('globalEmojiPicker').style.display = "none"; }
@@ -631,68 +555,21 @@
 
         function searchMessages() {
             const term = document.getElementById('msgSearchInput').value.toLowerCase(); const rows = document.querySelectorAll('.message-row');
-            rows.forEach(row => {
-                const text = row.getAttribute('data-text');
-                if(term === "") { row.style.display = "flex"; } 
-                else { if(text && text.includes(term)) { row.style.display = "flex"; const bubble = row.querySelector('.message-bubble'); bubble.classList.remove('highlight-msg'); void bubble.offsetWidth; bubble.classList.add('highlight-msg'); } else { row.style.display = "none"; } }
-            });
+            rows.forEach(row => { const text = row.getAttribute('data-text'); if(term === "") { row.style.display = "flex"; } else { if(text && text.includes(term)) { row.style.display = "flex"; const bubble = row.querySelector('.message-bubble'); bubble.classList.remove('highlight-msg'); void bubble.offsetWidth; bubble.classList.add('highlight-msg'); } else { row.style.display = "none"; } } });
         }
 
         let mediaRecorder; let audioChunks = []; const micBtn = document.getElementById('micBtn');
         micBtn.addEventListener('mousedown', startRecording); micBtn.addEventListener('mouseup', stopRecording);
         micBtn.addEventListener('touchstart', startRecording, {passive: false}); micBtn.addEventListener('touchend', stopRecording); micBtn.addEventListener('touchcancel', stopRecording);
 
-        function startRecording(e) {
-            e.preventDefault(); 
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
-                mediaRecorder = new MediaRecorder(stream); mediaRecorder.start(); micBtn.classList.add('recording'); 
-                mediaRecorder.addEventListener("dataavailable", event => { audioChunks.push(event.data); });
-            }).catch(err => { alert("Mikrofon izni alınamadı!"); });
-        }
-
-        function stopRecording(e) {
-            e.preventDefault();
-            if(mediaRecorder && mediaRecorder.state !== "inactive") {
-                mediaRecorder.stop(); micBtn.classList.remove('recording');
-                mediaRecorder.addEventListener("stop", () => {
-                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); audioChunks = []; 
-                    if(audioBlob.size < 3000) return; 
-                    const reader = new FileReader();
-                    reader.onload = function(event) { sendMessage(null, null, null, event.target.result); };
-                    reader.readAsDataURL(audioBlob);
-                });
-            }
-        }
+        function startRecording(e) { e.preventDefault(); navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => { mediaRecorder = new MediaRecorder(stream); mediaRecorder.start(); micBtn.classList.add('recording'); mediaRecorder.addEventListener("dataavailable", event => { audioChunks.push(event.data); }); }).catch(err => { alert("Mikrofon izni alınamadı!"); }); }
+        function stopRecording(e) { e.preventDefault(); if(mediaRecorder && mediaRecorder.state !== "inactive") { mediaRecorder.stop(); micBtn.classList.remove('recording'); mediaRecorder.addEventListener("stop", () => { const audioBlob = new Blob(audioChunks, { type: 'audio/webm' }); audioChunks = []; if(audioBlob.size < 3000) return; const reader = new FileReader(); reader.onload = function(event) { sendMessage(null, null, null, event.target.result); }; reader.readAsDataURL(audioBlob); }); } }
 
         function openFullscreen(src) { document.getElementById("fullscreenImg").src=src; document.getElementById("fullscreenModal").style.display="flex"; }
         function closeFullscreen() { document.getElementById("fullscreenModal").style.display="none"; }
         
-        // --- YENİ EKLENEN ÖZELLİKLER: SOHBETİ TEMİZLE VE GRUPTAN ÇIK ---
-
-        function clearChat() {
-            if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) {
-                database.ref("rooms/" + currentRoom).remove().then(() => {
-                    document.getElementById('messagesArea').innerHTML = "";
-                    alert("Sohbet tertemiz oldu! 🧹");
-                });
-            }
-        }
-
-        function leaveCurrentGroup() {
-            if(confirm("Bu gruptan çıkmak istediğine emin misin?")) {
-                // Grubu kullanıcının listesinden çıkar
-                myGroups = myGroups.filter(g => g !== currentRoom);
-                localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups));
-                database.ref('users/' + currentUser).update({ groups: myGroups });
-                
-                // Sol menüden sil
-                const roomElement = document.getElementById("room_" + currentRoom);
-                if(roomElement) roomElement.remove();
-                
-                // Genel sohbete geri dön
-                changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); 
-            }
-        }
+        function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
+        function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
     </script>
 </body>
 </html>
