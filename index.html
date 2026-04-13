@@ -569,7 +569,34 @@
         function closeFullscreen() { document.getElementById("fullscreenModal").style.display="none"; }
         
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
-        function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
-    </script>
+        function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } 
+    <script>
+    // Eğer firebase.messaging() daha önce tanımlanmadıysa diye kontrol ediyoruz
+    const messaging = firebase.messaging();
+
+    // Nöbetçi Dosyayı (Service Worker) Kaydetme ve İzin İsteme Bölümü
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./firebase-messaging-sw.js', { scope: './' })
+        .then(function(registration) {
+            console.log("Nöbetçi dosya kaydedildi. Kapsam:", registration.scope);
+            messaging.useServiceWorker(registration);
+            
+            // Bildirim izni ve Token alma
+            messaging.requestPermission().then(function() {
+                return messaging.getToken({ 
+                    vapidKey: "BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ" 
+                });
+            }).then(function(token) {
+                console.log("İŞTE BİLDİRİM TOKENİ:", token);
+                alert("SİSTEM BAŞARILI! Bildirim Tokeni alındı. Artık bildirimler çalışmalı.");
+            }).catch(function(err) {
+                console.error("Token alınırken bir sorun çıktı:", err);
+            });
+
+        }).catch(function(err) {
+            console.error("Nöbetçi dosya kaydedilemedi:", err);
+        });
+    }
+</script>
 </body>
 </html>
