@@ -15,9 +15,10 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage(function(payload) {
     console.log("Arka planda mesaj alındı: ", payload);
     
-    const notificationTitle = payload.data ? payload.data.title : 'Mailmaster Pro';
+    // BURASI DÜZELTİLDİ: payload.data yerine payload.notification okuyoruz!
+    const notificationTitle = payload.notification ? payload.notification.title : 'Mailmaster Pro';
     const notificationOptions = {
-        body: payload.data ? payload.data.body : 'Yeni bir mesajın var!',
+        body: payload.notification ? payload.notification.body : 'Yeni bir mesajın var!',
         icon: 'https://cdn-icons-png.flaticon.com/512/733/733585.png'
     };
 
