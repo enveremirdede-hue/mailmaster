@@ -253,7 +253,7 @@
             '\x6d\x61\x69\x6c\x6d\x61\x73\x74\x65\x72\x2d\x36\x32\x37\x38\x35',
             '\x6d\x61\x69\x6c\x6d\x61\x73\x74\x65\x72\x2d\x36\x32\x37\x38\x35\x2e\x66\x69\x72\x65\x62\x61\x73\x65\x73\x74\x6f\x72\x61\x67\x65\x2e\x61\x70\x70',
             '\x33\x32\x34\x39\x36\x33\x39\x35\x33\x37\x38\x32',
-            '\x31\x3a\x33\x32\x34\x39\x36\x33\x39\x35\x33\x37\x38\x32\x3a\x77\x65\x62\x3a\x61\x32\x62\x61\x61\x31\x63\x66\x36\x34\x64\x62\x35\x31\x37\x39\x38\x62\x63\x35\x37'
+            '\x31\x3a\x33\x32\x34\x39\x36\x33\x39\x35\x33\x37\x38\x32\x3a\x77\x65\x62\x3a\x61\x32\x62\x61\x61\x31\x63\x66\x36\x34\x64\x62\x35\x31\x37\x39\x38\x62\x63\x33\x35\x37'
         ];
         
         const firebaseConfig = { 
@@ -264,45 +264,38 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // --- BİLDİRİM (FCM) SİSTEMİ BAŞLANGICI ---
-        const messaging = firebase.messaging();
+        // --- ARKA PLAN BİLDİRİM (FCM) SİSTEMİ ---
+        let messaging = null;
 
-        function requestNotificationPermission() {
-            if ('serviceWorker' in navigator) {
-                // Burada yolu ./ olarak ayarladık ve scope belirttik, 404 hatasını önlemek için!
-                navigator.serviceWorker.register('./firebase-messaging-sw.js', { scope: './' })
-                .then(function(registration) {
-                    console.log("Nöbetçi dosya başarıyla kaydedildi. Kapsam:", registration.scope);
-                    messaging.useServiceWorker(registration);
-                    
-                    messaging.requestPermission().then(function() {
-                        return messaging.getToken({ 
-                            // Senin VAPID şifreni buraya ekledik!
-                            vapidKey: 'BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ' 
-                        });
-                    }).then((currentToken) => {
-                        if (currentToken) {
-                            console.log("Bildirim Tokeni Alındı:", currentToken);
-                            if(currentUser) {
-                                database.ref('users/' + currentUser).update({ fcmToken: currentToken });
-                            }
-                        } else {
-                            console.log('Bildirim izni alınamadı.');
-                        }
-                    }).catch((err) => {
-                        console.log('Bildirim Tokeni alınırken hata:', err);
-                    });
-                }).catch(function(err) {
-                    console.error("Nöbetçi dosya kaydedilemedi: ", err);
-                });
-            }
+        // Tarayıcının bildirimleri destekleyip desteklemediğini kontrol et
+        if (firebase.messaging.isSupported()) {
+            messaging = firebase.messaging();
+
+            messaging.onMessage((payload) => {
+                console.log('Ön planda mesaj alındı: ', payload);
+                showDesktopNotification(payload.data?.title || "Yeni Mesaj", payload.data?.body || "Sana bir mesaj geldi.");
+            });
+        } else {
+            console.log("Bu cihaz web bildirimlerini desteklemiyor, temel sürümde çalışılıyor.");
         }
 
-        messaging.onMessage((payload) => {
-            console.log('Ön planda mesaj alındı: ', payload);
-            showDesktopNotification(payload.data?.title || "Yeni Mesaj", payload.data?.body || "Sana bir mesaj geldi.");
-        });
-        // --- BİLDİRİM SİSTEMİ BİTİŞİ ---
+        function requestNotificationPermission() {
+            // Eğer cihaz desteklemiyorsa izni istemeye çalışma, sistemi dondurma!
+            if (!messaging) return; 
+
+            messaging.getToken({ vapidKey: 'BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ' })
+            .then((currentToken) => {
+                if (currentToken) {
+                    console.log("Bildirim Tokeni Alındı:", currentToken);
+                    database.ref('users/' + currentUser).update({ fcmToken: currentToken });
+                } else {
+                    console.log('Bildirim izni alınamadı.');
+                }
+            }).catch((err) => {
+                console.log('Bildirim Tokeni alınırken hata:', err);
+            });
+        }
+        // ----------------------------------------
 
         let currentUser = localStorage.getItem('mailmaster_user');
         let currentRoom = 'genel';
