@@ -279,22 +279,43 @@
             console.log("Bu cihaz web bildirimlerini desteklemiyor, temel sürümde çalışılıyor.");
         }
 
-        function requestNotificationPermission() {
-            // Eğer cihaz desteklemiyorsa izni istemeye çalışma, sistemi dondurma!
-            if (!messaging) return; 
+        // async ekleyerek tarayıcının donmasını (kilitlenmesini) engelliyoruz
+async function requestNotificationPermission() {
+    if (!('serviceWorker' in navigator)) {
+        console.log('Tarayıcınız arka plan bildirimlerini desteklemiyor.');
+        return;
+    }
 
-            messaging.getToken({ vapidKey: 'BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ' })
-            .then((currentToken) => {
-                if (currentToken) {
-                    console.log("Bildirim Tokeni Alındı:", currentToken);
-                    database.ref('users/' + currentUser).update({ fcmToken: currentToken });
-                } else {
-                    console.log('Bildirim izni alınamadı.');
-                }
-            }).catch((err) => {
-                console.log('Bildirim Tokeni alınırken hata:', err);
-            });
+    try {
+        // PERFORMANS İYİLEŞTİRMESİ: Mevcut işçi var mı diye kontrol et (Tableti yormamak için)
+        let registration = await navigator.serviceWorker.getRegistration('./');
+        
+        if (!registration) {
+            // Sadece işçi yoksa yeni kayıt oluştur (./ çok önemli, dosyayı aynı klasörde arar)
+            registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+            console.log('Yeni işçi başarıyla kaydedildi!', registration.scope);
+        } else {
+            console.log('Mevcut işçi bulundu, yeniden kayıt yapılarak cihaz yorulmadı.');
         }
+
+        // Firebase'den token alırken kendi işçimizi kullanıyoruz
+        const currentToken = await messaging.getToken({ 
+            vapidKey: 'BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ',
+            serviceWorkerRegistration: registration 
+        });
+
+        if (currentToken) {
+            console.log("Bildirim Tokeni Başarıyla Alındı:", currentToken);
+            // Token'i kullanıcının veritabanı profiline kaydet
+            database.ref('users/' + currentUser).update({ fcmToken: currentToken });
+        } else {
+            console.log('Bildirim izni alınamadı (Kullanıcı reddetmiş olabilir).');
+        }
+
+    } catch (err) {
+        console.error('Bildirim sistemi başlatılırken hata oluştu:', err);
+    }
+}
         // ----------------------------------------
 
         let currentUser = localStorage.getItem('mailmaster_user');
