@@ -1,7 +1,7 @@
 importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js');
 importScripts('https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js');
 
-// Senin Firebase Proje Ayarların
+// Firebase Ayarların
 firebase.initializeApp({
     apiKey: "AIzaSyA1bzy3VaZJwUwlhybNt6yrVzurQsrcqLw",
     projectId: "mailmaster-62785",
@@ -11,16 +11,19 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Site tamamen kapalıyken veya arka plandayken mesaj gelirse bu çalışır
+// Arka plan mesaj dinleyicisi
 messaging.onBackgroundMessage(function(payload) {
     console.log("Arka planda mesaj alındı: ", payload);
     
-    // BURASI DÜZELTİLDİ: payload.data yerine payload.notification okuyoruz!
+    // Güvenli veri çekme işlemi (Çökmeleri önler)
     const notificationTitle = payload.notification ? payload.notification.title : 'Mailmaster Pro';
     const notificationOptions = {
         body: payload.notification ? payload.notification.body : 'Yeni bir mesajın var!',
-        icon: 'https://cdn-icons-png.flaticon.com/512/733/733585.png'
+        icon: 'https://cdn-icons-png.flaticon.com/512/733/733585.png',
+        // Tabletlerde cihazın uykuya dalıp bildirimi yutmasını engeller:
+        requireInteraction: true 
     };
 
-    self.registration.showNotification(notificationTitle, notificationOptions);
+    // return eklemek cihazın hafızasını (RAM) doğru temizlemesini sağlar
+    return self.registration.showNotification(notificationTitle, notificationOptions);
 });
