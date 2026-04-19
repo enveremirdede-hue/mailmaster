@@ -601,6 +601,33 @@ async function requestNotificationPermission() {
         
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
         function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
+        // --- HAYALET YAZIYOR ÇÖZÜMÜ (GHOST TYPING FIX) ---
+const chatInputBox = document.getElementById('messageInput');
+
+chatInputBox.addEventListener('input', function() {
+    // Kullanıcı giriş yapmamışsa veya oda yoksa işlem yapma
+    if (!currentUser || !currentRoom) return;
+    
+    // Hangi odadaysak o odanın "yazıyor" referansını alıyoruz
+    typingRef = database.ref('typingStatus/' + currentRoom + '/' + currentUser);
+    
+    // SİHİRLİ SATIR: Eğer sekme aniden kapanırsa veya internet giderse, Firebase bu yazıyı otomatik silecek!
+    typingRef.onDisconnect().remove();
+
+    if (chatInputBox.value.trim().length > 0) {
+        typingRef.set(true); // Kutu doluysa yazıyor göster
+    } else {
+        typingRef.remove(); // Kutu boşaldıysa yazıyor yazısını kaldır
+    }
+});
+
+// Mesaj gönderildiğinde veya kutudan tık çekildiğinde yazıyı kaldır
+chatInputBox.addEventListener('blur', function() {
+    if (typingRef) {
+        typingRef.remove();
+    }
+});
+// -------------------------------------------------
     </script>
 </body>
 </html>
