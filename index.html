@@ -662,13 +662,16 @@ function startVideoCall() {
 }
 
 function joinVideoCall(roomToJoin) {
-    // Toplantı linkini oluştur
-    const jitsiUrl = `https://meet.jit.si/MailmasterPro_${roomToJoin}`;
+    // 1. Jitsi'nin hata vermemesi için oda adındaki boşlukları ve özel karakterleri siliyoruz.
+    // Örnek: "Minecraft lovers" -> "Minecraftlovers" olur.
+    const temizOdaAdi = roomToJoin.replace(/[^a-zA-Z0-9]/g, "");
     
-    // YENİ ÇÖZÜM: Aramayı güvenli bir şekilde yeni sekmede tam ekran açar!
+    // 2. Temizlenmiş oda adıyla toplantı linkini oluşturuyoruz
+    const jitsiUrl = `https://meet.jit.si/MailmasterPro_${temizOdaAdi}`;
+    
+    // 3. Aramayı güvenli bir şekilde yeni sekmede açıyoruz
     window.open(jitsiUrl, '_blank');
 }
-
 function endVideoCall() {
     // Artık bu fonksiyona gerek kalmadı. 
     // Kullanıcı yeni sekmeyi kapattığında konuşmadan çıkmış olur!
