@@ -177,6 +177,7 @@
             <div style="display: flex; gap: 8px; align-items: center;" class="header-actions">
                 <button id="leaveGroupBtn" style="display:none; background:#ff4c4c; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🚪 Çık</button>
                 <button onclick="clearChat()" style="background:var(--panel-bg); color:var(--text-main); border:1px solid rgba(134,150,160,0.2); padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🧹 Temizle</button>
+                <button id="startCallBtn" onclick="startVideoCall()" style="display:none; background:#00a884; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">📹 Ara</button>
                 <input type="text" class="msg-search-input" id="msgSearchInput" placeholder="🔍 Ara..." oninput="searchMessages()">
             </div>
         </div>
@@ -245,6 +246,14 @@
 
     <div class="fullscreen-modal" id="fullscreenModal" onclick="closeFullscreen()"><img class="fullscreen-modal-content" id="fullscreenImg"></div>
 
+    <div id="videoCallScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: var(--bg-dark); z-index: 10000; flex-direction: column;">
+        <div style="height: 60px; background: var(--panel-bg); display: flex; justify-content: space-between; align-items: center; padding: 0 20px; border-bottom: 1px solid #333;">
+            <h3 style="color: white; margin: 0;">📞 Görüntülü Sohbet</h3>
+            <button onclick="endVideoCall()" style="background: #ff4c4c; color: white; border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(255, 76, 76, 0.4);">Sohbetten Ayrıl</button>
+        </div>
+        <iframe id="jitsiFrame" allow="camera; microphone; display-capture; autoplay" style="width: 100%; flex-grow: 1; border: none;"></iframe>
+    </div>
+
     <script>
         const _0x2f8a = [
             '\x41\x49\x7a\x61\x53\x79\x41\x31\x62\x7a\x79\x33\x56\x61\x5a\x4a\x77\x55\x77\x6c\x68\x79\x62\x4e\x74\x36\x79\x72\x56\x7a\x75\x72\x51\x73\x72\x63\x71\x4c\x77',
@@ -267,7 +276,6 @@
         // --- ARKA PLAN BİLDİRİM (FCM) SİSTEMİ ---
         let messaging = null;
 
-        // Tarayıcının bildirimleri destekleyip desteklemediğini kontrol et
         if (firebase.messaging.isSupported()) {
             messaging = firebase.messaging();
 
@@ -279,43 +287,38 @@
             console.log("Bu cihaz web bildirimlerini desteklemiyor, temel sürümde çalışılıyor.");
         }
 
-        // async ekleyerek tarayıcının donmasını (kilitlenmesini) engelliyoruz
-async function requestNotificationPermission() {
-    if (!('serviceWorker' in navigator)) {
-        console.log('Tarayıcınız arka plan bildirimlerini desteklemiyor.');
-        return;
-    }
+        async function requestNotificationPermission() {
+            if (!('serviceWorker' in navigator)) {
+                console.log('Tarayıcınız arka plan bildirimlerini desteklemiyor.');
+                return;
+            }
 
-    try {
-        // PERFORMANS İYİLEŞTİRMESİ: Mevcut işçi var mı diye kontrol et (Tableti yormamak için)
-        let registration = await navigator.serviceWorker.getRegistration('./');
-        
-        if (!registration) {
-            // Sadece işçi yoksa yeni kayıt oluştur (./ çok önemli, dosyayı aynı klasörde arar)
-            registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-            console.log('Yeni işçi başarıyla kaydedildi!', registration.scope);
-        } else {
-            console.log('Mevcut işçi bulundu, yeniden kayıt yapılarak cihaz yorulmadı.');
+            try {
+                let registration = await navigator.serviceWorker.getRegistration('./');
+                
+                if (!registration) {
+                    registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
+                    console.log('Yeni işçi başarıyla kaydedildi!', registration.scope);
+                } else {
+                    console.log('Mevcut işçi bulundu, yeniden kayıt yapılarak cihaz yorulmadı.');
+                }
+
+                const currentToken = await messaging.getToken({ 
+                    vapidKey: 'BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ',
+                    serviceWorkerRegistration: registration 
+                });
+
+                if (currentToken) {
+                    console.log("Bildirim Tokeni Başarıyla Alındı:", currentToken);
+                    database.ref('users/' + currentUser).update({ fcmToken: currentToken });
+                } else {
+                    console.log('Bildirim izni alınamadı (Kullanıcı reddetmiş olabilir).');
+                }
+
+            } catch (err) {
+                console.error('Bildirim sistemi başlatılırken hata oluştu:', err);
+            }
         }
-
-        // Firebase'den token alırken kendi işçimizi kullanıyoruz
-        const currentToken = await messaging.getToken({ 
-            vapidKey: 'BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ',
-            serviceWorkerRegistration: registration 
-        });
-
-        if (currentToken) {
-            console.log("Bildirim Tokeni Başarıyla Alındı:", currentToken);
-            // Token'i kullanıcının veritabanı profiline kaydet
-            database.ref('users/' + currentUser).update({ fcmToken: currentToken });
-        } else {
-            console.log('Bildirim izni alınamadı (Kullanıcı reddetmiş olabilir).');
-        }
-
-    } catch (err) {
-        console.error('Bildirim sistemi başlatılırken hata oluştu:', err);
-    }
-}
         // ----------------------------------------
 
         let currentUser = localStorage.getItem('mailmaster_user');
@@ -367,8 +370,6 @@ async function requestNotificationPermission() {
 
         function initUser() {
             database.ref('users/' + currentUser).update({ active: true });
-            
-            // BURASI ÇOK ÖNEMLİ: Cihaz bildirim izni alıyor!
             requestNotificationPermission();
 
             database.ref('users/' + currentUser).once('value').then(snap => {
@@ -494,6 +495,17 @@ async function requestNotificationPermission() {
             document.getElementById('headerTitle').innerText = isDM ? "Gizli Sohbet: " + title : title; currentRoom = roomId; 
             
             const leaveBtn = document.getElementById('leaveGroupBtn');
+            const callBtn = document.getElementById('startCallBtn');
+
+            if (callBtn) {
+                // Sadece genel ve yazilim odalarında gizle, geri kalan her yerde göster
+                if (roomId !== 'genel' && roomId !== 'yazilim') {
+                    callBtn.style.display = 'block';
+                } else {
+                    callBtn.style.display = 'none';
+                }
+            }
+
             if (leaveBtn) { if (!isDM && roomId !== 'genel' && roomId !== 'yazilim') { leaveBtn.style.display = 'block'; leaveBtn.onclick = leaveCurrentGroup; } else { leaveBtn.style.display = 'none'; } }
             cancelReply(); loadMessages();
         }
@@ -534,11 +546,24 @@ async function requestNotificationPermission() {
                 else { content += `<div class="file-attachment">📄 <a href="${data.fileUrl}" download="${data.fileName}" style="color:var(--accent); font-weight:bold;">${data.fileName} İndir</a></div>`; }
             }
             if(data.audioUrl) { hasMedia = true; content += `<div style="margin-bottom:5px;"><audio controls class="audio-player" src="${data.audioUrl}"></audio></div>`; }
-            if(data.text) content += `<div class="msg-text-content">${data.text}</div>`;
+            
+            let mesajMetni = data.text;
+            if (mesajMetni === "[VIDEO_CALL_START_SIGNAL]") {
+                mesajMetni = `
+                <div style="background: rgba(0, 168, 132, 0.1); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--accent); margin-top: 5px;">
+                    <div style="margin-bottom: 10px; font-size: 14px; color: var(--text-main);">📹 <b>Sohbette görüntülü arama başlatıldı!</b></div>
+                    <button onclick="joinVideoCall('${currentRoom}')" style="background: var(--accent); color: white; border: none; padding: 10px 25px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 6px rgba(0, 168, 132, 0.3);">Hemen Katıl</button>
+                </div>`;
+            }
+
+            if(data.text) content += `<div class="msg-text-content">${mesajMetni}</div>`;
 
             let quote = ""; if (data.replyTo) quote = `<div class="quoted-box" onclick="document.getElementById('msg-row-${data.replyTo.id}').scrollIntoView({behavior:'smooth', block:'center'})"><div class="quote-sender">${data.replyTo.sender}</div><div style="font-size:12px;opacity:0.8;">${data.replyTo.snippet}</div></div>`;
             let ticks = isMe ? `<span class="msg-ticks" style="color:${data.status === 'read' ? '#53bdeb' : 'var(--text-muted)'};">✓✓</span>` : "";
-            const safeText = data.text ? data.text.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
+            
+            let safeText = data.text ? data.text.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
+            if (data.text === "[VIDEO_CALL_START_SIGNAL]") safeText = "Görüntülü Arama";
+
             const actions = `<div class="msg-actions"><button class="action-btn" title="Tepki Ver" onclick="toggleEmojiPicker('${id}', this)">😀</button><button class="action-btn" title="Yanıtla" onclick="initiateReply('${id}', '${data.sender}', '${safeText}', ${hasMedia})">↩️</button>${isMe ? `<button class="action-btn del" onclick="deleteMessage('${id}')">🗑️</button>` : ''}</div>`;
 
             const row = document.createElement('div'); row.className = `message-row ${isMe ? 'sent' : 'received'}`; row.id = "msg-row-" + id; row.setAttribute('data-text', (data.text || "").toLowerCase()); 
@@ -601,33 +626,53 @@ async function requestNotificationPermission() {
         
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
         function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
-        // --- HAYALET YAZIYOR ÇÖZÜMÜ (GHOST TYPING FIX) ---
-const chatInputBox = document.getElementById('messageInput');
+        
+        const chatInputBox = document.getElementById('messageInput');
 
-chatInputBox.addEventListener('input', function() {
-    // Kullanıcı giriş yapmamışsa veya oda yoksa işlem yapma
-    if (!currentUser || !currentRoom) return;
+        chatInputBox.addEventListener('input', function() {
+            if (!currentUser || !currentRoom) return;
+            typingRef = database.ref('typingStatus/' + currentRoom + '/' + currentUser);
+            typingRef.onDisconnect().remove();
+
+            if (chatInputBox.value.trim().length > 0) {
+                typingRef.set(true); 
+            } else {
+                typingRef.remove(); 
+            }
+        });
+
+        chatInputBox.addEventListener('blur', function() {
+            if (typingRef) {
+                typingRef.remove();
+            }
+        });
+
+        // ==========================================
+// --- ODALAR İÇİN GÖRÜNTÜLÜ ARAMA SİSTEMİ (GÜNCELLENDİ) ---
+// ==========================================
+function startVideoCall() {
+    database.ref('rooms/' + currentRoom).push({
+        sender: currentUser,
+        text: "[VIDEO_CALL_START_SIGNAL]",
+        timestamp: Date.now(),
+        status: 'sent'
+    });
+    // Kuran kişi anında aramaya katılır
+    joinVideoCall(currentRoom);
+}
+
+function joinVideoCall(roomToJoin) {
+    // Toplantı linkini oluştur
+    const jitsiUrl = `https://meet.jit.si/MailmasterPro_${roomToJoin}`;
     
-    // Hangi odadaysak o odanın "yazıyor" referansını alıyoruz
-    typingRef = database.ref('typingStatus/' + currentRoom + '/' + currentUser);
-    
-    // SİHİRLİ SATIR: Eğer sekme aniden kapanırsa veya internet giderse, Firebase bu yazıyı otomatik silecek!
-    typingRef.onDisconnect().remove();
+    // YENİ ÇÖZÜM: Aramayı güvenli bir şekilde yeni sekmede tam ekran açar!
+    window.open(jitsiUrl, '_blank');
+}
 
-    if (chatInputBox.value.trim().length > 0) {
-        typingRef.set(true); // Kutu doluysa yazıyor göster
-    } else {
-        typingRef.remove(); // Kutu boşaldıysa yazıyor yazısını kaldır
-    }
-});
-
-// Mesaj gönderildiğinde veya kutudan tık çekildiğinde yazıyı kaldır
-chatInputBox.addEventListener('blur', function() {
-    if (typingRef) {
-        typingRef.remove();
-    }
-});
-// -------------------------------------------------
+function endVideoCall() {
+    // Artık bu fonksiyona gerek kalmadı. 
+    // Kullanıcı yeni sekmeyi kapattığında konuşmadan çıkmış olur!
+}
     </script>
 </body>
 </html>
