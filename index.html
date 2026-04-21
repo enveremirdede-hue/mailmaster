@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | V7.0 (Arka Plan Bildirimli)</title>
+    <title>Mailmaster Pro | V8.0 (Çevrimiçi Durum Sistemli)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -172,13 +172,19 @@
         <div class="chat-header">
             <div class="chat-header-info">
                 <div class="room-icon" style="background: var(--accent); color: white;" id="headerIcon">#</div>
-                <h2 id="headerTitle">Genel Sohbet</h2>
+                <div style="display: flex; flex-direction: column; justify-content: center;">
+                    <h2 id="headerTitle" style="font-size: 16px; margin-bottom: 2px;">Genel Sohbet</h2>
+                    <div id="headerStatus" style="display:none; align-items:center; gap:5px; font-size:12px; color:var(--text-muted);">
+                        <span id="headerStatusDot" style="width:10px; height:10px; border-radius:50%; background:#8696a0; display:inline-block; transition:0.3s;"></span>
+                        <span id="headerStatusText">Yükleniyor...</span>
+                    </div>
+                </div>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;" class="header-actions">
+                <button id="groupInfoBtn" onclick="showGroupMembers()" style="display:block; background:var(--panel-bg); color:var(--accent); border:1px solid rgba(134,150,160,0.2); padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👥 Üyeler</button>
+                
                 <button id="leaveGroupBtn" style="display:none; background:#ff4c4c; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🚪 Çık</button>
                 <button onclick="clearChat()" style="background:var(--panel-bg); color:var(--text-main); border:1px solid rgba(134,150,160,0.2); padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🧹 Temizle</button>
-                
-                <button id="startAudioCallBtn" onclick="startAudioCall()" style="display:none; background:#007bb5; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">📞 Ara</button>
                 
                 <button id="startCallBtn" onclick="startVideoCall()" style="display:none; background:#00a884; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">📹 Görüntülü</button>
                 
@@ -248,6 +254,15 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="groupMembersModal" style="z-index: 2000;">
+        <div class="modal" style="width: 420px; padding: 25px;">
+            <span onclick="closeGroupMembers()" style="position:absolute; top:15px; right:20px; font-size:28px; cursor:pointer;">&times;</span>
+            <h2 id="groupMembersGroupName" style="margin-bottom:20px; font-size:18px; color: var(--accent);">Grup Üyeleri</h2>
+            <div id="groupMembersList" style="max-height: 400px; overflow-y: auto; text-align: left; padding-right: 5px;">
+                </div>
+        </div>
+    </div>
+
     <div class="fullscreen-modal" id="fullscreenModal" onclick="closeFullscreen()"><img class="fullscreen-modal-content" id="fullscreenImg"></div>
 
     <script>
@@ -269,59 +284,32 @@
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
-        // --- ARKA PLAN BİLDİRİM (FCM) SİSTEMİ ---
-        // (Not: Sekme kapalıyken çalışması için ana dizinde "firebase-messaging-sw.js" dosyası KESİNLİKLE bulunmalıdır!)
         let messaging = null;
-
         if (firebase.messaging.isSupported()) {
             messaging = firebase.messaging();
-
             messaging.onMessage((payload) => {
-                console.log('Ön planda mesaj alındı: ', payload);
                 showDesktopNotification(payload.data?.title || "Yeni Mesaj", payload.data?.body || "Sana bir mesaj geldi.");
             });
-        } else {
-            console.log("Bu cihaz web bildirimlerini desteklemiyor, temel sürümde çalışılıyor.");
         }
 
         async function requestNotificationPermission() {
-            if (!('serviceWorker' in navigator)) {
-                console.log('Tarayıcınız arka plan bildirimlerini desteklemiyor.');
-                return;
-            }
-
+            if (!('serviceWorker' in navigator)) return;
             try {
                 let registration = await navigator.serviceWorker.getRegistration('./');
-                
-                if (!registration) {
-                    registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-                    console.log('Yeni işçi başarıyla kaydedildi!', registration.scope);
-                } else {
-                    console.log('Mevcut işçi bulundu, yeniden kayıt yapılarak cihaz yorulmadı.');
-                }
-
+                if (!registration) registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
                 const currentToken = await messaging.getToken({ 
                     vapidKey: 'BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ',
                     serviceWorkerRegistration: registration 
                 });
-
-                if (currentToken) {
-                    console.log("Bildirim Tokeni Başarıyla Alındı:", currentToken);
-                    database.ref('users/' + currentUser).update({ fcmToken: currentToken });
-                } else {
-                    console.log('Bildirim izni alınamadı (Kullanıcı reddetmiş olabilir).');
-                }
-
-            } catch (err) {
-                console.error('Bildirim sistemi başlatılırken hata oluştu:', err);
-            }
+                if (currentToken) database.ref('users/' + currentUser).update({ fcmToken: currentToken });
+            } catch (err) { console.error(err); }
         }
-        // ----------------------------------------
 
         let currentUser = localStorage.getItem('mailmaster_user');
         let currentRoom = 'genel';
         let currentRoomRef = null;
         let typingRef = null;
+        let activeStatusRef = null;
         let myDMs = [], myGroups = [];
         let typingTimer, activeReplyData = null;
         const userCache = {};
@@ -357,8 +345,8 @@
             }
         }
 
-        if (!currentUser) { document.getElementById('authModal').style.display = 'flex'; 
-        } else {
+        if (!currentUser) { document.getElementById('authModal').style.display = 'flex'; } 
+        else {
             database.ref('users/' + currentUser).once('value').then(snap => {
                 const userData = snap.val();
                 if (userData && !userData.password) document.getElementById('legacyUserModal').style.display = 'flex'; else initUser(); 
@@ -366,7 +354,17 @@
         }
 
         function initUser() {
-            database.ref('users/' + currentUser).update({ active: true });
+            // --- GERÇEK ZAMANLI ÇEVRİMİÇİ SİSTEMİ (PRESENCE) ---
+            const myStatusRef = database.ref('/users/' + currentUser);
+            database.ref('.info/connected').on('value', function(snapshot) {
+                if (snapshot.val() == false) { return; }
+                // Bağlantı koparsa veya sekme kapanırsa offline yap
+                myStatusRef.onDisconnect().update({ state: 'offline', last_changed: Date.now() }).then(function() {
+                    // Bağlantı sağlandıysa online yap
+                    myStatusRef.update({ state: 'online', last_changed: Date.now() });
+                });
+            });
+
             requestNotificationPermission();
 
             database.ref('users/' + currentUser).once('value').then(snap => {
@@ -404,7 +402,7 @@
             if(u.length < 3 || p.length < 3) return alert("En az 3 karakter!");
             database.ref('users/' + u).once('value').then(snap => {
                 if (snap.exists()) return alert("Kullanıcı adı alınmış!");
-                database.ref('users/' + u).set({ password: p, active: true }).then(() => { currentUser = u; localStorage.setItem('mailmaster_user', currentUser); document.getElementById('authModal').style.display = 'none'; initUser(); });
+                database.ref('users/' + u).set({ password: p, state: 'online' }).then(() => { currentUser = u; localStorage.setItem('mailmaster_user', currentUser); document.getElementById('authModal').style.display = 'none'; initUser(); });
             });
         }
 
@@ -493,26 +491,109 @@
             
             const leaveBtn = document.getElementById('leaveGroupBtn');
             const videoBtn = document.getElementById('startCallBtn');
-            const audioBtn = document.getElementById('startAudioCallBtn');
+            const groupInfoBtn = document.getElementById('groupInfoBtn');
+            const headerStatus = document.getElementById('headerStatus');
 
-            // Çağrı butonları mantığı (Yazılım ve Genel hariç her yerde aktif)
+            // Çağrı butonu mantığı (Yazılım ve Genel hariç her yerde aktif)
             if (roomId !== 'genel' && roomId !== 'yazilim') {
                 videoBtn.style.display = 'block';
-                audioBtn.style.display = 'block';
             } else {
                 videoBtn.style.display = 'none';
-                audioBtn.style.display = 'none';
             }
 
             if (leaveBtn) { if (!isDM && roomId !== 'genel' && roomId !== 'yazilim') { leaveBtn.style.display = 'block'; leaveBtn.onclick = leaveCurrentGroup; } else { leaveBtn.style.display = 'none'; } }
+            
+            // Eğer öncekinden kalan bir dinleyici varsa iptal et
+            if(activeStatusRef) { activeStatusRef.off(); activeStatusRef = null; }
+
+            if (isDM) {
+                // DM'lerde yeşil/beyaz çevrimiçi göstergesini aç, grup butonunu gizle
+                headerStatus.style.display = 'flex';
+                groupInfoBtn.style.display = 'none';
+                document.getElementById('headerStatusText').innerText = "Yükleniyor...";
+                document.getElementById('headerStatusDot').style.background = "#8696a0";
+                
+                activeStatusRef = database.ref('users/' + title);
+                activeStatusRef.on('value', snap => {
+                    const uData = snap.val();
+                    if (uData && uData.state === 'online') {
+                        document.getElementById('headerStatusDot').style.background = "#00a884"; // Yeşil (Online)
+                        document.getElementById('headerStatusDot').style.boxShadow = "0 0 6px #00a884";
+                        document.getElementById('headerStatusText').innerText = "Çevrimiçi";
+                    } else {
+                        document.getElementById('headerStatusDot').style.background = "white"; // Beyaz (Offline)
+                        document.getElementById('headerStatusDot').style.boxShadow = "none";
+                        document.getElementById('headerStatusText').innerText = "Çevrimdışı";
+                    }
+                });
+            } else {
+                // Gruplarda yeşil noktayı gizle, Üyeler butonunu aç
+                headerStatus.style.display = 'none';
+                groupInfoBtn.style.display = 'block';
+            }
+
             cancelReply(); loadMessages();
         }
+
+        // --- GRUP ÜYELERİNİ GÖSTERME SİSTEMİ ---
+        function showGroupMembers() {
+            document.getElementById('groupMembersModal').style.display = 'flex';
+            document.getElementById('groupMembersGroupName').innerText = document.getElementById('headerTitle').innerText + " Üyeleri";
+            const list = document.getElementById('groupMembersList');
+            list.innerHTML = '<div style="text-align:center; padding:20px; color: var(--text-muted);">Üyeler yükleniyor...</div>';
+            
+            database.ref('users').once('value').then(snap => {
+                list.innerHTML = '';
+                const allUsers = snap.val() || {};
+                
+                for (let uName in allUsers) {
+                    const uData = allUsers[uName];
+                    let isMember = false;
+                    
+                    // Genel ve Yazılım odalarında herkes üyedir.
+                    if (currentRoom === 'genel' || currentRoom === 'yazilim') {
+                        isMember = true;
+                    } else {
+                        // Özel gruplarda, kişinin groups dizisinde bu oda adı varsa üyedir.
+                        if (uData.groups && uData.groups.includes(currentRoom)) {
+                            isMember = true;
+                        }
+                    }
+                    
+                    if (isMember) {
+                        const isOnline = uData.state === 'online';
+                        const dotColor = isOnline ? '#00a884' : 'white';
+                        const statusTxt = isOnline ? 'Çevrimiçi' : 'Çevrimdışı';
+                        
+                        list.innerHTML += `
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(134,150,160,0.1); background: var(--chat-bg); margin-bottom: 5px; border-radius: 8px;">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <div style="width:35px; height:35px; border-radius:50%; background:linear-gradient(135deg, var(--accent), #007bb5); color:white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:14px; background-size:cover; background-position:center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);" id="member_av_${uName}">${uName.charAt(0).toUpperCase()}</div>
+                                <div style="font-weight:bold; font-size:15px; color:var(--text-main);">${uName} ${uName === currentUser ? '<span style="font-size:11px; color:var(--accent); font-weight:normal;">(Sen)</span>' : ''}</div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); background: var(--sidebar-bg); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(134,150,160,0.1);">
+                                <span style="width:8px; height:8px; border-radius:50%; background:${dotColor}; ${isOnline ? 'box-shadow: 0 0 5px '+dotColor+';' : ''}"></span> ${statusTxt}
+                            </div>
+                        </div>`;
+                        
+                        if(uData.profilePic) {
+                            setTimeout(() => {
+                                const av = document.getElementById('member_av_' + uName);
+                                if(av) { av.style.background = `url(${uData.profilePic}) center/cover`; av.innerText = ""; }
+                            }, 50);
+                        }
+                    }
+                }
+                if (list.innerHTML === '') { list.innerHTML = '<div style="text-align:center; padding:20px; color: var(--text-muted);">Bu grupta kimse bulunamadı.</div>'; }
+            });
+        }
+        function closeGroupMembers() { document.getElementById('groupMembersModal').style.display = 'none'; }
+
 
         function loadMessages() {
             if(currentRoomRef) currentRoomRef.off(); if(typingRef) typingRef.off();
             const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
             currentRoomRef = database.ref("rooms/" + currentRoom); 
-            // typingRef atamasını aşağıda Ghost Typing fix'i üzerinden yapacağız
             
             database.ref("typingStatus/" + currentRoom).on("value", s => { 
                 const t = []; 
@@ -560,14 +641,6 @@
                     <button onclick="joinVideoCall('${currentRoom}')" style="background: var(--accent); color: white; border: none; padding: 10px 25px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 6px rgba(0, 168, 132, 0.3);">Hemen Katıl</button>
                 </div>`;
             } 
-            // Sesli Arama Sinyali Kontrolü
-            else if (mesajMetni === "[VOICE_CALL_START_SIGNAL]") {
-                mesajMetni = `
-                <div style="background: rgba(0, 123, 181, 0.1); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid #007bb5; margin-top: 5px;">
-                    <div style="margin-bottom: 10px; font-size: 14px; color: var(--text-main);">📞 <b>Sohbette sesli arama başlatıldı!</b></div>
-                    <button onclick="joinVoiceCall('${currentRoom}')" style="background: #007bb5; color: white; border: none; padding: 10px 25px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 6px rgba(0, 123, 181, 0.3);">Hemen Katıl</button>
-                </div>`;
-            }
 
             if(data.text) content += `<div class="msg-text-content">${mesajMetni}</div>`;
 
@@ -576,7 +649,6 @@
             
             let safeText = data.text ? data.text.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
             if (data.text === "[VIDEO_CALL_START_SIGNAL]") safeText = "Görüntülü Arama";
-            if (data.text === "[VOICE_CALL_START_SIGNAL]") safeText = "Sesli Arama";
 
             const actions = `<div class="msg-actions"><button class="action-btn" title="Tepki Ver" onclick="toggleEmojiPicker('${id}', this)">😀</button><button class="action-btn" title="Yanıtla" onclick="initiateReply('${id}', '${data.sender}', '${safeText}', ${hasMedia})">↩️</button>${isMe ? `<button class="action-btn del" onclick="deleteMessage('${id}')">🗑️</button>` : ''}</div>`;
 
@@ -682,9 +754,8 @@
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
         function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
         
-        // --- HAYALET YAZIYOR ÇÖZÜMÜ (GHOST TYPING FIX) ---
+        // --- HAYALET YAZIYOR ÇÖZÜMÜ ---
         const chatInputBox = document.getElementById('messageInput');
-
         chatInputBox.addEventListener('input', function() {
             if (!currentUser || !currentRoom) return;
             typingRef = database.ref('typingStatus/' + currentRoom + '/' + currentUser);
@@ -698,16 +769,12 @@
         });
 
         chatInputBox.addEventListener('blur', function() {
-            if (typingRef) {
-                typingRef.remove();
-            }
+            if (typingRef) typingRef.remove();
         });
 
         // ==========================================
-        // --- SESLİ VE GÖRÜNTÜLÜ ARAMA SİSTEMİ ---
+        // --- GÖRÜNTÜLÜ ARAMA SİSTEMİ ---
         // ==========================================
-
-        // Görüntülü Arama
         function startVideoCall() {
             database.ref('rooms/' + currentRoom).push({ sender: currentUser, text: "[VIDEO_CALL_START_SIGNAL]", timestamp: Date.now(), status: 'sent' });
             joinVideoCall(currentRoom);
@@ -716,19 +783,6 @@
         function joinVideoCall(roomToJoin) {
             const temizOdaAdi = roomToJoin.replace(/[^a-zA-Z0-9]/g, "");
             const jitsiUrl = `https://meet.jit.si/MailmasterPro_${temizOdaAdi}`;
-            window.open(jitsiUrl, '_blank');
-        }
-
-        // Sesli Arama
-        function startAudioCall() {
-            database.ref('rooms/' + currentRoom).push({ sender: currentUser, text: "[VOICE_CALL_START_SIGNAL]", timestamp: Date.now(), status: 'sent' });
-            joinVoiceCall(currentRoom);
-        }
-
-        function joinVoiceCall(roomToJoin) {
-            const temizOdaAdi = roomToJoin.replace(/[^a-zA-Z0-9]/g, "");
-            // Kameraların varsayılan olarak kapalı başlaması için URL sonuna parametre ekliyoruz
-            const jitsiUrl = `https://meet.jit.si/MailmasterPro_${temizOdaAdi}#config.startVideoMuted=true`;
             window.open(jitsiUrl, '_blank');
         }
     </script>
