@@ -3,11 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | V9.0 (Kusursuz Çevrimiçi & Yazıyor Sistemi)</title>
+    <title>Mailmaster Pro | V10.0 (Uçtan Uca Şifreleme - E2EE)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
     <style>
         /* --- TASARIM (CSS) --- */
@@ -181,11 +183,11 @@
                 </div>
             </div>
             <div style="display: flex; gap: 8px; align-items: center;" class="header-actions">
+                <button id="e2eeBtn" onclick="configureE2EE()" style="display:block; background:#ff4c4c; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🔴 E2EE Kapalı</button>
+
                 <button id="groupInfoBtn" onclick="showGroupMembers()" style="display:block; background:var(--panel-bg); color:var(--accent); border:1px solid rgba(134,150,160,0.2); padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👥 Üyeler</button>
-                
                 <button id="leaveGroupBtn" style="display:none; background:#ff4c4c; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🚪 Çık</button>
                 <button onclick="clearChat()" style="background:var(--panel-bg); color:var(--text-main); border:1px solid rgba(134,150,160,0.2); padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🧹 Temizle</button>
-                
                 <button id="startCallBtn" onclick="startVideoCall()" style="display:none; background:#00a884; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">📹 Görüntülü</button>
                 
                 <input type="text" class="msg-search-input" id="msgSearchInput" placeholder="🔍 Ara..." oninput="searchMessages()">
@@ -258,8 +260,7 @@
         <div class="modal" style="width: 420px; padding: 25px;">
             <span onclick="closeGroupMembers()" style="position:absolute; top:15px; right:20px; font-size:28px; cursor:pointer;">&times;</span>
             <h2 id="groupMembersGroupName" style="margin-bottom:20px; font-size:18px; color: var(--accent);">Grup Üyeleri</h2>
-            <div id="groupMembersList" style="max-height: 400px; overflow-y: auto; text-align: left; padding-right: 5px;">
-                </div>
+            <div id="groupMembersList" style="max-height: 400px; overflow-y: auto; text-align: left; padding-right: 5px;"></div>
         </div>
     </div>
 
@@ -305,18 +306,21 @@
             } catch (err) { console.error(err); }
         }
 
-        // DEĞİŞKEN ÇAKIŞMALARI DÜZELTİLDİ:
         let currentUser = localStorage.getItem('mailmaster_user');
         let currentRoom = 'genel';
         let currentRoomRef = null;
-        let roomTypingRef = null; // Sadece odayı dinleyen
-        let myTypingRef = null;   // Sadece benim yazmamı ileten
+        let roomTypingRef = null; 
+        let myTypingRef = null;   
         let activeStatusRef = null;
+        let groupMembersRef = null; 
         let myDMs = [], myGroups = [];
         let typingTimer, activeReplyData = null;
         const userCache = {};
         const pageLoadTime = Date.now();
         let audioCtx;
+
+        // --- UÇTAN UCA ŞİFRELEME (E2EE) DEĞİŞKENİ ---
+        let currentE2EEKey = '';
 
         let isLightTheme = localStorage.getItem('mailmaster_theme') === 'light';
         applyTheme();
@@ -356,10 +360,7 @@
         }
 
         function initUser() {
-            // --- GERÇEK ZAMANLI ÇEVRİMİÇİ SİSTEMİ (PRESENCE) ---
             const myStatusRef = database.ref('users/' + currentUser);
-            
-            // Siteye girildiği an zorla Çevrimiçi yapıyoruz (Kusursuz çalışma için)
             myStatusRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
             
             database.ref('.info/connected').on('value', function(snapshot) {
@@ -368,10 +369,7 @@
                     state: 'offline', 
                     last_changed: firebase.database.ServerValue.TIMESTAMP 
                 }).then(function() {
-                    myStatusRef.update({ 
-                        state: 'online', 
-                        last_changed: firebase.database.ServerValue.TIMESTAMP 
-                    });
+                    myStatusRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
                 });
             });
 
@@ -497,19 +495,19 @@
             document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active')); 
             if(element) element.classList.add('active');
             
-            document.getElementById('headerTitle').innerText = isDM ? "Gizli Sohbet: " + title : title; currentRoom = roomId; 
+            document.getElementById('headerTitle').innerText = isDM ? "Gizli Sohbet: " + title : title; 
+            currentRoom = roomId; 
             
+            // --- E2EE KEY YÜKLEME ---
+            currentE2EEKey = localStorage.getItem('e2ee_' + currentRoom) || '';
+            updateE2EEButtonUI();
+
             const leaveBtn = document.getElementById('leaveGroupBtn');
             const videoBtn = document.getElementById('startCallBtn');
             const groupInfoBtn = document.getElementById('groupInfoBtn');
             const headerStatus = document.getElementById('headerStatus');
 
-            if (roomId !== 'genel' && roomId !== 'yazilim') {
-                videoBtn.style.display = 'block';
-            } else {
-                videoBtn.style.display = 'none';
-            }
-
+            if (roomId !== 'genel' && roomId !== 'yazilim') { videoBtn.style.display = 'block'; } else { videoBtn.style.display = 'none'; }
             if (leaveBtn) { if (!isDM && roomId !== 'genel' && roomId !== 'yazilim') { leaveBtn.style.display = 'block'; leaveBtn.onclick = leaveCurrentGroup; } else { leaveBtn.style.display = 'none'; } }
             
             if(activeStatusRef) { activeStatusRef.off(); activeStatusRef = null; }
@@ -541,13 +539,64 @@
             cancelReply(); loadMessages();
         }
 
+        // --- UÇTAN UCA ŞİFRELEME (E2EE) FONKSİYONLARI ---
+        function configureE2EE() {
+            let userPrompt = prompt("Bu sohbet için E2EE Şifresi belirleyin.\nKarşı tarafın mesajları okuyabilmesi için aynı şifreyi bilmesi gerekir.\n\nŞifrelemeyi kapatmak için kutuyu boş bırakıp Tamam'a basın.", currentE2EEKey);
+            if (userPrompt !== null) {
+                currentE2EEKey = userPrompt.trim();
+                if (currentE2EEKey === '') {
+                    localStorage.removeItem('e2ee_' + currentRoom);
+                    alert("E2EE Şifrelemesi kapatıldı. Yeni mesajlar şifresiz gönderilecek.");
+                } else {
+                    localStorage.setItem('e2ee_' + currentRoom, currentE2EEKey);
+                    alert("E2EE Şifresi ayarlandı! Bu odadaki yeni mesajlarınız askeri düzeyde şifrelenecek.");
+                }
+                updateE2EEButtonUI();
+                loadMessages(); // Mesajları yeni anahtarla tekrar çözmeye çalış
+            }
+        }
+
+        function updateE2EEButtonUI() {
+            const btn = document.getElementById('e2eeBtn');
+            if (currentE2EEKey !== '') {
+                btn.innerHTML = "🟢 E2EE Aktif";
+                btn.style.background = "#00a884";
+            } else {
+                btn.innerHTML = "🔴 E2EE Kapalı";
+                btn.style.background = "#ff4c4c";
+            }
+        }
+
+        function encryptMessageText(text) {
+            if (!text || text.startsWith("[")) return text; // Sistem mesajlarını şifreleme
+            if (!currentE2EEKey) return text; // Anahtar yoksa normal gönder
+            return "E2EE::" + CryptoJS.AES.encrypt(text, currentE2EEKey).toString();
+        }
+
+        function decryptMessageText(cipher) {
+            if (!cipher || !cipher.startsWith("E2EE::")) return cipher; // Şifrelenmemişse direkt göster
+            if (!currentE2EEKey) return "🔒 [Şifreli Mesaj - Okumak İçin Şifre Girin]";
+            
+            try {
+                // E2EE:: önekini atıp şifreyi çözüyoruz
+                const bytes = CryptoJS.AES.decrypt(cipher.replace("E2EE::", ""), currentE2EEKey);
+                const dec = bytes.toString(CryptoJS.enc.Utf8);
+                return dec ? dec : "🔒 [Şifreli Mesaj - Yanlış Şifre]";
+            } catch(e) {
+                return "🔒 [Şifreli Mesaj - Yanlış Şifre]";
+            }
+        }
+        // --------------------------------------------------
+
         function showGroupMembers() {
             document.getElementById('groupMembersModal').style.display = 'flex';
             document.getElementById('groupMembersGroupName').innerText = document.getElementById('headerTitle').innerText + " Üyeleri";
             const list = document.getElementById('groupMembersList');
             list.innerHTML = '<div style="text-align:center; padding:20px; color: var(--text-muted);">Üyeler yükleniyor...</div>';
             
-            database.ref('users').once('value').then(snap => {
+            if(groupMembersRef) groupMembersRef.off();
+            groupMembersRef = database.ref('users');
+            groupMembersRef.on('value', snap => {
                 list.innerHTML = '';
                 const allUsers = snap.val() || {};
                 
@@ -555,13 +604,8 @@
                     const uData = allUsers[uName];
                     let isMember = false;
                     
-                    if (currentRoom === 'genel' || currentRoom === 'yazilim') {
-                        isMember = true;
-                    } else {
-                        if (uData.groups && uData.groups.includes(currentRoom)) {
-                            isMember = true;
-                        }
-                    }
+                    if (currentRoom === 'genel' || currentRoom === 'yazilim') { isMember = true; } 
+                    else { if (uData.groups && uData.groups.includes(currentRoom)) { isMember = true; } }
                     
                     if (isMember) {
                         const isOnline = uData.state === 'online';
@@ -579,29 +623,21 @@
                             </div>
                         </div>`;
                         
-                        if(uData.profilePic) {
-                            setTimeout(() => {
-                                const av = document.getElementById('member_av_' + uName);
-                                if(av) { av.style.background = `url(${uData.profilePic}) center/cover`; av.innerText = ""; }
-                            }, 50);
-                        }
+                        if(uData.profilePic) { setTimeout(() => { const av = document.getElementById('member_av_' + uName); if(av) { av.style.background = `url(${uData.profilePic}) center/cover`; av.innerText = ""; } }, 50); }
                     }
                 }
                 if (list.innerHTML === '') { list.innerHTML = '<div style="text-align:center; padding:20px; color: var(--text-muted);">Bu grupta kimse bulunamadı.</div>'; }
             });
         }
-        function closeGroupMembers() { document.getElementById('groupMembersModal').style.display = 'none'; }
-
+        function closeGroupMembers() { document.getElementById('groupMembersModal').style.display = 'none'; if(groupMembersRef) { groupMembersRef.off(); groupMembersRef = null; } }
 
         function loadMessages() {
             if(currentRoomRef) currentRoomRef.off(); 
-            // Eski "yazıyor" dinleyicisini kapat
             if(roomTypingRef) roomTypingRef.off();
             
             const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
             currentRoomRef = database.ref("rooms/" + currentRoom); 
             
-            // YENİ "Yazıyor" Dinleyicisi (Değişken ismi düzeltildi)
             roomTypingRef = database.ref("typingStatus/" + currentRoom);
             roomTypingRef.on("value", s => { 
                 const t = []; 
@@ -616,7 +652,7 @@
                     if(d.sender !== currentUser && d.status !== 'read') {
                         currentRoomRef.child(s.key).update({ status: 'read' });
                         if (d.timestamp > pageLoadTime) {
-                            if (document.hidden) { let notifText = d.text ? d.text : (d.imageUrl ? "📷 Fotoğraf" : "📁 Dosya/Ses"); showDesktopNotification(d.sender, notifText); }
+                            if (document.hidden) { let notifText = d.text ? decryptMessageText(d.text) : (d.imageUrl ? "📷 Fotoğraf" : "📁 Dosya/Ses"); showDesktopNotification(d.sender, notifText); }
                             playNotificationSound();
                         }
                     } 
@@ -639,7 +675,8 @@
             }
             if(data.audioUrl) { hasMedia = true; content += `<div style="margin-bottom:5px;"><audio controls class="audio-player" src="${data.audioUrl}"></audio></div>`; }
             
-            let mesajMetni = data.text;
+            // SİHİRLİ SATIR: Mesajı AES-256 ile Ekrana Basmadan Önce Çözüyoruz!
+            let mesajMetni = decryptMessageText(data.text);
             
             if (mesajMetni === "[VIDEO_CALL_START_SIGNAL]") {
                 mesajMetni = `
@@ -654,12 +691,12 @@
             let quote = ""; if (data.replyTo) quote = `<div class="quoted-box" onclick="document.getElementById('msg-row-${data.replyTo.id}').scrollIntoView({behavior:'smooth', block:'center'})"><div class="quote-sender">${data.replyTo.sender}</div><div style="font-size:12px;opacity:0.8;">${data.replyTo.snippet}</div></div>`;
             let ticks = isMe ? `<span class="msg-ticks" style="color:${data.status === 'read' ? '#53bdeb' : 'var(--text-muted)'};">✓✓</span>` : "";
             
-            let safeText = data.text ? data.text.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
+            let safeText = mesajMetni ? mesajMetni.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
             if (data.text === "[VIDEO_CALL_START_SIGNAL]") safeText = "Görüntülü Arama";
 
             const actions = `<div class="msg-actions"><button class="action-btn" title="Tepki Ver" onclick="toggleEmojiPicker('${id}', this)">😀</button><button class="action-btn" title="Yanıtla" onclick="initiateReply('${id}', '${data.sender}', '${safeText}', ${hasMedia})">↩️</button>${isMe ? `<button class="action-btn del" onclick="deleteMessage('${id}')">🗑️</button>` : ''}</div>`;
 
-            const row = document.createElement('div'); row.className = `message-row ${isMe ? 'sent' : 'received'}`; row.id = "msg-row-" + id; row.setAttribute('data-text', (data.text || "").toLowerCase()); 
+            const row = document.createElement('div'); row.className = `message-row ${isMe ? 'sent' : 'received'}`; row.id = "msg-row-" + id; row.setAttribute('data-text', (mesajMetni || "").toLowerCase()); 
             
             row.innerHTML = isMe ? `
                 <div class="message-wrapper sent"><div class="message-content-group">${actions}<div class="message-bubble" id="bubble-${id}">${quote} ${content}<div class="message-meta"><span class="message-time">${time}</span> ${ticks}</div><div class="reaction-display" id="reactions-${id}" style="display:none;"></div></div></div></div><div class="msg-avatar" id="avatar-${id}">${data.sender.charAt(0).toUpperCase()}</div>
@@ -672,11 +709,14 @@
         }
 
         function sendMessage(img = null, file = null, fName = null, audio = null) {
-            const txt = document.getElementById('messageInput').value.trim();
+            let txt = document.getElementById('messageInput').value.trim();
             if(!txt && !img && !file && !audio) return;
+            
+            // Metni sunucuya göndermeden önce E2EE ile şifreliyoruz!
+            txt = encryptMessageText(txt);
+            
             currentRoomRef.push({ sender: currentUser, text: txt, imageUrl: img, fileUrl: file, fileName: fName, audioUrl: audio, timestamp: Date.now(), status: 'sent', replyTo: activeReplyData });
             document.getElementById('messageInput').value = ""; cancelReply(); 
-            // Değişken ismi düzeltildi
             database.ref('typingStatus/'+currentRoom+'/'+currentUser).remove();
         }
 
@@ -763,11 +803,9 @@
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
         function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
         
-        // --- HAYALET YAZIYOR ÇÖZÜMÜ ---
         const chatInputBox = document.getElementById('messageInput');
         chatInputBox.addEventListener('input', function() {
             if (!currentUser || !currentRoom) return;
-            // Değişken ismi düzeltildi
             myTypingRef = database.ref('typingStatus/' + currentRoom + '/' + currentUser);
             myTypingRef.onDisconnect().remove();
 
@@ -782,9 +820,6 @@
             if (myTypingRef) myTypingRef.remove();
         });
 
-        // ==========================================
-        // --- GÖRÜNTÜLÜ ARAMA SİSTEMİ ---
-        // ==========================================
         function startVideoCall() {
             database.ref('rooms/' + currentRoom).push({ sender: currentUser, text: "[VIDEO_CALL_START_SIGNAL]", timestamp: Date.now(), status: 'sent' });
             joinVideoCall(currentRoom);
