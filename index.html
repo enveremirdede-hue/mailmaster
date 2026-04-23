@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | V10.0 (Uçtan Uca Şifreleme - E2EE)</title>
+    <title>Mailmaster Pro | V10.1 (Yazıyor Düzeltmesi)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
 
     <style>
@@ -310,16 +309,14 @@
         let currentRoom = 'genel';
         let currentRoomRef = null;
         let roomTypingRef = null; 
-        let myTypingRef = null;   
         let activeStatusRef = null;
         let groupMembersRef = null; 
         let myDMs = [], myGroups = [];
-        let typingTimer, activeReplyData = null;
+        let activeReplyData = null;
         const userCache = {};
         const pageLoadTime = Date.now();
         let audioCtx;
 
-        // --- UÇTAN UCA ŞİFRELEME (E2EE) DEĞİŞKENİ ---
         let currentE2EEKey = '';
 
         let isLightTheme = localStorage.getItem('mailmaster_theme') === 'light';
@@ -498,7 +495,6 @@
             document.getElementById('headerTitle').innerText = isDM ? "Gizli Sohbet: " + title : title; 
             currentRoom = roomId; 
             
-            // --- E2EE KEY YÜKLEME ---
             currentE2EEKey = localStorage.getItem('e2ee_' + currentRoom) || '';
             updateE2EEButtonUI();
 
@@ -539,7 +535,6 @@
             cancelReply(); loadMessages();
         }
 
-        // --- UÇTAN UCA ŞİFRELEME (E2EE) FONKSİYONLARI ---
         function configureE2EE() {
             let userPrompt = prompt("Bu sohbet için E2EE Şifresi belirleyin.\nKarşı tarafın mesajları okuyabilmesi için aynı şifreyi bilmesi gerekir.\n\nŞifrelemeyi kapatmak için kutuyu boş bırakıp Tamam'a basın.", currentE2EEKey);
             if (userPrompt !== null) {
@@ -552,7 +547,7 @@
                     alert("E2EE Şifresi ayarlandı! Bu odadaki yeni mesajlarınız askeri düzeyde şifrelenecek.");
                 }
                 updateE2EEButtonUI();
-                loadMessages(); // Mesajları yeni anahtarla tekrar çözmeye çalış
+                loadMessages(); 
             }
         }
 
@@ -568,17 +563,16 @@
         }
 
         function encryptMessageText(text) {
-            if (!text || text.startsWith("[")) return text; // Sistem mesajlarını şifreleme
-            if (!currentE2EEKey) return text; // Anahtar yoksa normal gönder
+            if (!text || text.startsWith("[")) return text; 
+            if (!currentE2EEKey) return text; 
             return "E2EE::" + CryptoJS.AES.encrypt(text, currentE2EEKey).toString();
         }
 
         function decryptMessageText(cipher) {
-            if (!cipher || !cipher.startsWith("E2EE::")) return cipher; // Şifrelenmemişse direkt göster
+            if (!cipher || !cipher.startsWith("E2EE::")) return cipher; 
             if (!currentE2EEKey) return "🔒 [Şifreli Mesaj - Okumak İçin Şifre Girin]";
             
             try {
-                // E2EE:: önekini atıp şifreyi çözüyoruz
                 const bytes = CryptoJS.AES.decrypt(cipher.replace("E2EE::", ""), currentE2EEKey);
                 const dec = bytes.toString(CryptoJS.enc.Utf8);
                 return dec ? dec : "🔒 [Şifreli Mesaj - Yanlış Şifre]";
@@ -586,7 +580,6 @@
                 return "🔒 [Şifreli Mesaj - Yanlış Şifre]";
             }
         }
-        // --------------------------------------------------
 
         function showGroupMembers() {
             document.getElementById('groupMembersModal').style.display = 'flex';
@@ -675,7 +668,6 @@
             }
             if(data.audioUrl) { hasMedia = true; content += `<div style="margin-bottom:5px;"><audio controls class="audio-player" src="${data.audioUrl}"></audio></div>`; }
             
-            // SİHİRLİ SATIR: Mesajı AES-256 ile Ekrana Basmadan Önce Çözüyoruz!
             let mesajMetni = decryptMessageText(data.text);
             
             if (mesajMetni === "[VIDEO_CALL_START_SIGNAL]") {
@@ -712,7 +704,6 @@
             let txt = document.getElementById('messageInput').value.trim();
             if(!txt && !img && !file && !audio) return;
             
-            // Metni sunucuya göndermeden önce E2EE ile şifreliyoruz!
             txt = encryptMessageText(txt);
             
             currentRoomRef.push({ sender: currentUser, text: txt, imageUrl: img, fileUrl: file, fileName: fName, audioUrl: audio, timestamp: Date.now(), status: 'sent', replyTo: activeReplyData });
@@ -748,9 +739,6 @@
             rows.forEach(row => { const text = row.getAttribute('data-text'); if(term === "") { row.style.display = "flex"; } else { if(text && text.includes(term)) { row.style.display = "flex"; const bubble = row.querySelector('.message-bubble'); bubble.classList.remove('highlight-msg'); void bubble.offsetWidth; bubble.classList.add('highlight-msg'); } else { row.style.display = "none"; } } });
         }
 
-        // ==========================================
-        // --- SES KAYIT SİSTEMİ ---
-        // ==========================================
         let mediaRecorder; 
         let audioChunks = []; 
         const micBtn = document.getElementById('micBtn');
@@ -795,7 +783,6 @@
                 mediaRecorder.stream.getTracks().forEach(track => track.stop());
             } 
         }
-        // ==========================================
 
         function openFullscreen(src) { document.getElementById("fullscreenImg").src=src; document.getElementById("fullscreenModal").style.display="flex"; }
         function closeFullscreen() { document.getElementById("fullscreenModal").style.display="none"; }
@@ -803,21 +790,26 @@
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
         function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
         
+        // --- KUSURSUZ YAZIYOR (TYPING) SİSTEMİ ---
+        let typingTimeout;
         const chatInputBox = document.getElementById('messageInput');
+        
         chatInputBox.addEventListener('input', function() {
             if (!currentUser || !currentRoom) return;
-            myTypingRef = database.ref('typingStatus/' + currentRoom + '/' + currentUser);
-            myTypingRef.onDisconnect().remove();
-
+            
+            const tRef = database.ref('typingStatus/' + currentRoom + '/' + currentUser);
+            
             if (chatInputBox.value.trim().length > 0) {
-                myTypingRef.set(true); 
+                tRef.set(true);
+                tRef.onDisconnect().remove();
+                
+                clearTimeout(typingTimeout);
+                typingTimeout = setTimeout(() => {
+                    tRef.remove();
+                }, 3000);
             } else {
-                myTypingRef.remove(); 
+                tRef.remove(); 
             }
-        });
-
-        chatInputBox.addEventListener('blur', function() {
-            if (myTypingRef) myTypingRef.remove();
         });
 
         function startVideoCall() {
