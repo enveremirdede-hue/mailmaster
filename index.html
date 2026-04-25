@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | V11.0 (Kusursuz Yazıyor Sistemi)</title>
+    <title>Mailmaster Pro | Kusursuz Ses & Yazıyor Sistemi</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -106,12 +106,12 @@
         .file-attachment { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.1); padding: 12px; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(134,150,160,0.1); }
         .audio-player { max-width: 250px; height: 40px; border-radius: 20px; outline: none; }
         
-        .mic-btn { transition: 0.2s; user-select: none; -webkit-touch-callout: none; }
-        .mic-btn.recording { color: #ff4c4c; animation: pulse 1s infinite; background: rgba(255, 76, 76, 0.2); }
+        .mic-btn { transition: 0.2s; user-select: none; -webkit-touch-callout: none; cursor: pointer; }
+        .mic-btn.recording { color: white; background: #ff4c4c; animation: pulse 1s infinite; box-shadow: 0 0 10px #ff4c4c;}
         @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.15);} 100% {transform: scale(1);} }
 
         /* Yazıyor animasyonu için güncellendi */
-        .typing-indicator { min-height: 20px; font-size: 13px; color: var(--accent); font-style: italic; padding: 0 10%; margin-bottom: 10px; font-weight: 500; display: flex; align-items: center; gap: 5px;}
+        .typing-indicator { min-height: 20px; font-size: 13px; color: var(--accent); font-style: italic; padding: 0 10%; margin-bottom: 10px; font-weight: 500; display: none; align-items: center; gap: 5px;}
         .typing-icon { animation: pulse 1s infinite; display: inline-block; font-style: normal; }
 
         .bottom-container { background-color: var(--panel-bg); display: flex; flex-direction: column; transition: 0.3s; border-top: 1px solid rgba(134,150,160,0.1); }
@@ -632,18 +632,27 @@
             const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
             currentRoomRef = database.ref("rooms/" + currentRoom); 
             
-            // --- OKUYUCU: Kimler yazıyor ekrana basma (Sıfırdan yazıldı) ---
+            // --- OKUYUCU: Sorunsuz Obje Döngüsü ---
             roomTypingRef = database.ref("typingStatus/" + currentRoom);
-            roomTypingRef.on("value", s => { 
-                const t = []; 
-                s.forEach(c => { 
-                    if(c.key !== currentUser && c.val() === true) t.push(c.key); 
-                }); 
+            roomTypingRef.on("value", snap => { 
                 const indicator = document.getElementById('typingIndicator');
+                const t = []; 
+                const data = snap.val();
+                
+                if (data) {
+                    for (let user in data) {
+                        if (user !== currentUser && data[user] === true) {
+                            t.push(user);
+                        }
+                    }
+                }
+                
                 if (t.length > 0) {
                     indicator.innerHTML = `<span class="typing-icon">✍️</span> ${t.join(', ')} yazıyor...`;
+                    indicator.style.display = "flex"; // Kesinlikle görünür yap
                 } else {
                     indicator.innerHTML = "";
+                    indicator.style.display = "none"; // Kesinlikle gizle
                 }
             });
             
@@ -718,7 +727,7 @@
             currentRoomRef.push({ sender: currentUser, text: txt, imageUrl: img, fileUrl: file, fileName: fName, audioUrl: audio, timestamp: Date.now(), status: 'sent', replyTo: activeReplyData });
             document.getElementById('messageInput').value = ""; cancelReply(); 
             
-            // Mesaj gidince yazıyor bilgisini hemen kapat
+            // Mesaj gidince yazıyor bilgisini anında temizle
             database.ref('typingStatus/'+currentRoom+'/'+currentUser).remove();
             isTyping = false;
             clearTimeout(typingTimeout);
@@ -752,50 +761,63 @@
             rows.forEach(row => { const text = row.getAttribute('data-text'); if(term === "") { row.style.display = "flex"; } else { if(text && text.includes(term)) { row.style.display = "flex"; const bubble = row.querySelector('.message-bubble'); bubble.classList.remove('highlight-msg'); void bubble.offsetWidth; bubble.classList.add('highlight-msg'); } else { row.style.display = "none"; } } });
         }
 
+        // --- GÜVENLİ VE ÇAKIŞMAYAN SES KAYIT SİSTEMİ ---
         let mediaRecorder; 
         let audioChunks = []; 
         const micBtn = document.getElementById('micBtn');
+        let isRecordingProcess = false;
 
-        micBtn.addEventListener('mousedown', startRecording); 
-        micBtn.addEventListener('mouseup', stopRecording);
-        micBtn.addEventListener('mouseleave', stopRecording); 
-        micBtn.addEventListener('touchstart', startRecording, {passive: false}); 
-        micBtn.addEventListener('touchend', stopRecording); 
-        micBtn.addEventListener('touchcancel', stopRecording);
-
-        function startRecording(e) { 
-            if(e.cancelable) e.preventDefault(); 
+        function handleMicPress(e) {
+            e.preventDefault();
+            if(isRecordingProcess) return; // Çift tıklamayı engelle
+            
             navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => { 
                 mediaRecorder = new MediaRecorder(stream); 
                 mediaRecorder.start(); 
+                isRecordingProcess = true;
                 micBtn.classList.add('recording'); 
+                audioChunks = [];
+                
                 mediaRecorder.addEventListener("dataavailable", event => { 
                     audioChunks.push(event.data); 
                 }); 
             }).catch(err => { 
-                alert("Mikrofon izni alınamadı! Sitenin 'https://' ile açıldığından emin olun."); 
+                alert("Mikrofon izni alınamadı! Tarayıcı ayarlarını kontrol edin."); 
                 console.error(err);
+            });
+        }
+
+        function handleMicRelease(e) {
+            if(!isRecordingProcess || !mediaRecorder || mediaRecorder.state === "inactive") return;
+            e.preventDefault();
+            
+            mediaRecorder.stop(); 
+            isRecordingProcess = false;
+            micBtn.classList.remove('recording'); 
+            
+            mediaRecorder.addEventListener("stop", () => { 
+                const audioBlob = new Blob(audioChunks); 
+                audioChunks = []; 
+                if(audioBlob.size < 1000) return; // Boş/Hatalı kaydı yollama
+                
+                const reader = new FileReader(); 
+                reader.onload = function(event) { 
+                    sendMessage(null, null, null, event.target.result); 
+                }; 
+                reader.readAsDataURL(audioBlob); 
+                
+                // Mikrofon donanımını kapat (Kırmızı ışık sönsün)
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
             }); 
         }
 
-        function stopRecording(e) { 
-            if(e.cancelable) e.preventDefault(); 
-            if(mediaRecorder && mediaRecorder.state !== "inactive") { 
-                mediaRecorder.stop(); 
-                micBtn.classList.remove('recording'); 
-                mediaRecorder.addEventListener("stop", () => { 
-                    const audioBlob = new Blob(audioChunks); 
-                    audioChunks = []; 
-                    if(audioBlob.size < 1000) return; 
-                    const reader = new FileReader(); 
-                    reader.onload = function(event) { 
-                        sendMessage(null, null, null, event.target.result); 
-                    }; 
-                    reader.readAsDataURL(audioBlob); 
-                }); 
-                mediaRecorder.stream.getTracks().forEach(track => track.stop());
-            } 
-        }
+        // Butona basılınca başlat
+        micBtn.addEventListener('mousedown', handleMicPress);
+        micBtn.addEventListener('touchstart', handleMicPress, {passive: false});
+        
+        // Elini çekince VEYA fare/parmak butondan dışarı kayınca durdur (Güvenli Sistem)
+        window.addEventListener('mouseup', handleMicRelease);
+        window.addEventListener('touchend', handleMicRelease);
 
         function openFullscreen(src) { document.getElementById("fullscreenImg").src=src; document.getElementById("fullscreenModal").style.display="flex"; }
         function closeFullscreen() { document.getElementById("fullscreenModal").style.display="none"; }
