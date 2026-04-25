@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | V10.2 (Kusursuz Yazıyor & Çevrimiçi)</title>
+    <title>Mailmaster Pro | V11.0 (Kusursuz Yazıyor Sistemi)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -110,7 +110,9 @@
         .mic-btn.recording { color: #ff4c4c; animation: pulse 1s infinite; background: rgba(255, 76, 76, 0.2); }
         @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.15);} 100% {transform: scale(1);} }
 
-        .typing-indicator { min-height: 20px; font-size: 13px; color: var(--accent); font-style: italic; padding: 0 10%; margin-bottom: 10px; font-weight: 500;}
+        /* Yazıyor animasyonu için güncellendi */
+        .typing-indicator { min-height: 20px; font-size: 13px; color: var(--accent); font-style: italic; padding: 0 10%; margin-bottom: 10px; font-weight: 500; display: flex; align-items: center; gap: 5px;}
+        .typing-icon { animation: pulse 1s infinite; display: inline-block; font-style: normal; }
 
         .bottom-container { background-color: var(--panel-bg); display: flex; flex-direction: column; transition: 0.3s; border-top: 1px solid rgba(134,150,160,0.1); }
         .reply-preview { display: none; padding: 10px 10%; background: var(--chat-bg); border-bottom: 1px solid rgba(134,150,160,0.1); align-items: center; gap: 15px; }
@@ -354,17 +356,14 @@
         }
 
         function initUser() {
-            // --- GERÇEK ZAMANLI ÇEVRİMİÇİ SİSTEMİ (PRESENCE) DÜZELTİLDİ ---
             const connectedRef = database.ref('.info/connected');
             const myUserRef = database.ref('users/' + currentUser);
 
             connectedRef.on('value', (snap) => {
                 if (snap.val() === true) {
-                    // Cihaz koptuğunda sunucunun KESİN olarak yapacağı işlem (Eski hatayı çözen kısım)
                     myUserRef.child('state').onDisconnect().set('offline');
                     myUserRef.child('last_changed').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
                     
-                    // Biz şu an buradayız, online yap!
                     myUserRef.update({
                         state: 'online',
                         last_changed: firebase.database.ServerValue.TIMESTAMP
@@ -633,11 +632,19 @@
             const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
             currentRoomRef = database.ref("rooms/" + currentRoom); 
             
+            // --- OKUYUCU: Kimler yazıyor ekrana basma (Sıfırdan yazıldı) ---
             roomTypingRef = database.ref("typingStatus/" + currentRoom);
             roomTypingRef.on("value", s => { 
                 const t = []; 
-                s.forEach(c => { if(c.key !== currentUser && c.val() === true) t.push(c.key); }); 
-                document.getElementById('typingIndicator').innerText = t.length > 0 ? t.join(', ') + " yazıyor..." : ""; 
+                s.forEach(c => { 
+                    if(c.key !== currentUser && c.val() === true) t.push(c.key); 
+                }); 
+                const indicator = document.getElementById('typingIndicator');
+                if (t.length > 0) {
+                    indicator.innerHTML = `<span class="typing-icon">✍️</span> ${t.join(', ')} yazıyor...`;
+                } else {
+                    indicator.innerHTML = "";
+                }
             });
             
             currentRoomRef.on("child_added", s => { 
@@ -711,8 +718,10 @@
             currentRoomRef.push({ sender: currentUser, text: txt, imageUrl: img, fileUrl: file, fileName: fName, audioUrl: audio, timestamp: Date.now(), status: 'sent', replyTo: activeReplyData });
             document.getElementById('messageInput').value = ""; cancelReply(); 
             
+            // Mesaj gidince yazıyor bilgisini hemen kapat
             database.ref('typingStatus/'+currentRoom+'/'+currentUser).remove();
-            isTyping = false; // Spam engelleyici kilidi de sıfırla
+            isTyping = false;
+            clearTimeout(typingTimeout);
         }
 
         function initiateReply(id, s, t, h) { activeReplyData = {id:id, sender:s, snippet: t||(h?"Medya/Ses":"Dosya")}; document.getElementById('replySenderName').innerText=s; document.getElementById('replyTextSnippet').innerText=activeReplyData.snippet; document.getElementById('replyPreview').style.display='flex'; document.getElementById('messageInput').focus(); }
@@ -794,32 +803,31 @@
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
         function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
         
-        // --- KUSURSUZ YAZIYOR (TYPING) SİSTEMİ ---
+        // --- YAZICI: Korumalı ve Akıllı Yazıyor Mantığı ---
         let typingTimeout;
-        let isTyping = false; // SPAM ENGELLEYİCİ KİLİT
-        const chatInputBox = document.getElementById('messageInput');
+        let isTyping = false;
         
-        chatInputBox.addEventListener('input', function() {
+        document.getElementById('messageInput').addEventListener('input', function() {
             if (!currentUser || !currentRoom) return;
             
             const tRef = database.ref('typingStatus/' + currentRoom + '/' + currentUser);
             
-            if (chatInputBox.value.trim().length > 0) {
-                // Sadece yazmaya ilk başladığında Firebase'e "Yazıyor" gönder
+            if (this.value.trim().length > 0) {
                 if (!isTyping) {
                     tRef.set(true);
+                    tRef.onDisconnect().remove(); 
                     isTyping = true;
                 }
                 
-                // Sen yazmaya devam ettikçe kapatma süresini 3 saniye uzat
                 clearTimeout(typingTimeout);
                 typingTimeout = setTimeout(() => {
                     tRef.remove();
                     isTyping = false;
                 }, 3000);
             } else {
-                tRef.remove(); 
+                tRef.remove();
                 isTyping = false;
+                clearTimeout(typingTimeout);
             }
         });
 
