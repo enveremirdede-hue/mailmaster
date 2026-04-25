@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | Kusursuz Ses & Yazıyor Sistemi</title>
+    <title>Mailmaster Pro | Kesin Çözüm Sürümü</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -106,11 +106,10 @@
         .file-attachment { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.1); padding: 12px; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(134,150,160,0.1); }
         .audio-player { max-width: 250px; height: 40px; border-radius: 20px; outline: none; }
         
-        .mic-btn { transition: 0.2s; user-select: none; -webkit-touch-callout: none; cursor: pointer; }
+        .mic-btn { transition: 0.2s; user-select: none; cursor: pointer; touch-action: none; }
         .mic-btn.recording { color: white; background: #ff4c4c; animation: pulse 1s infinite; box-shadow: 0 0 10px #ff4c4c;}
         @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.15);} 100% {transform: scale(1);} }
 
-        /* Yazıyor animasyonu için güncellendi */
         .typing-indicator { min-height: 20px; font-size: 13px; color: var(--accent); font-style: italic; padding: 0 10%; margin-bottom: 10px; font-weight: 500; display: none; align-items: center; gap: 5px;}
         .typing-icon { animation: pulse 1s infinite; display: inline-block; font-style: normal; }
 
@@ -363,11 +362,7 @@
                 if (snap.val() === true) {
                     myUserRef.child('state').onDisconnect().set('offline');
                     myUserRef.child('last_changed').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
-                    
-                    myUserRef.update({
-                        state: 'online',
-                        last_changed: firebase.database.ServerValue.TIMESTAMP
-                    });
+                    myUserRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
                 }
             });
 
@@ -422,6 +417,7 @@
             if(userCache[username]) return callback(userCache[username]);
             database.ref('users/' + username).once('value').then(snap => { const pic = snap.val()?.profilePic || null; userCache[username] = pic; callback(pic); });
         }
+        
         function updateProfileUI() {
             document.getElementById('displayUsername').innerText = currentUser;
             getUserProfilePic(currentUser, (pic) => {
@@ -454,6 +450,7 @@
             if(n.length<3 || p.length<3) return alert("En az 3 karakter!");
             database.ref('group_metadata/'+n).once('value').then(s => { if(s.exists()) alert("Grup adı alınmış!"); else database.ref('group_metadata/'+n).set({password:p}).then(()=>{ saveAndAddGroup(n); closeGroupModal(); }); });
         }
+        
         function handleJoinGroup() {
             const n = document.getElementById('joinGroupName').value.trim(), p = document.getElementById('joinGroupPass').value.trim();
             database.ref('group_metadata/'+n).once('value').then(s => { if(!s.exists()) alert("Bulunamadı!"); else if(s.val().password === p) { saveAndAddGroup(n); closeGroupModal(); } else alert("Yanlış şifre!"); });
@@ -474,6 +471,7 @@
                 database.ref('users/'+v).once('value').then(s => { if(s.exists()){ openDM(v); document.getElementById('userSearchInput').value=""; } else alert("Bulunamadı!"); });
             }
         }
+        
         function loadSavedDMs() { myDMs.forEach(t => addDMToList([currentUser, t].sort().join("_"), t)); }
         
         function openDM(t) {
@@ -495,7 +493,6 @@
             
             document.getElementById('headerTitle').innerText = isDM ? "Gizli Sohbet: " + title : title; 
             currentRoom = roomId; 
-            
             currentE2EEKey = localStorage.getItem('e2ee_' + currentRoom) || '';
             updateE2EEButtonUI();
 
@@ -554,13 +551,8 @@
 
         function updateE2EEButtonUI() {
             const btn = document.getElementById('e2eeBtn');
-            if (currentE2EEKey !== '') {
-                btn.innerHTML = "🟢 E2EE Aktif";
-                btn.style.background = "#00a884";
-            } else {
-                btn.innerHTML = "🔴 E2EE Kapalı";
-                btn.style.background = "#ff4c4c";
-            }
+            if (currentE2EEKey !== '') { btn.innerHTML = "🟢 E2EE Aktif"; btn.style.background = "#00a884"; } 
+            else { btn.innerHTML = "🔴 E2EE Kapalı"; btn.style.background = "#ff4c4c"; }
         }
 
         function encryptMessageText(text) {
@@ -572,14 +564,11 @@
         function decryptMessageText(cipher) {
             if (!cipher || !cipher.startsWith("E2EE::")) return cipher; 
             if (!currentE2EEKey) return "🔒 [Şifreli Mesaj - Okumak İçin Şifre Girin]";
-            
             try {
                 const bytes = CryptoJS.AES.decrypt(cipher.replace("E2EE::", ""), currentE2EEKey);
                 const dec = bytes.toString(CryptoJS.enc.Utf8);
                 return dec ? dec : "🔒 [Şifreli Mesaj - Yanlış Şifre]";
-            } catch(e) {
-                return "🔒 [Şifreli Mesaj - Yanlış Şifre]";
-            }
+            } catch(e) { return "🔒 [Şifreli Mesaj - Yanlış Şifre]"; }
         }
 
         function showGroupMembers() {
@@ -623,6 +612,7 @@
                 if (list.innerHTML === '') { list.innerHTML = '<div style="text-align:center; padding:20px; color: var(--text-muted);">Bu grupta kimse bulunamadı.</div>'; }
             });
         }
+        
         function closeGroupMembers() { document.getElementById('groupMembersModal').style.display = 'none'; if(groupMembersRef) { groupMembersRef.off(); groupMembersRef = null; } }
 
         function loadMessages() {
@@ -632,27 +622,27 @@
             const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
             currentRoomRef = database.ref("rooms/" + currentRoom); 
             
-            // --- OKUYUCU: Sorunsuz Obje Döngüsü ---
+            // --- KESİN ÇÖZÜM: YAZIYOR SİSTEMİ (ESKİ ESNEKLİK) ---
             roomTypingRef = database.ref("typingStatus/" + currentRoom);
             roomTypingRef.on("value", snap => { 
-                const indicator = document.getElementById('typingIndicator');
-                const t = []; 
                 const data = snap.val();
+                const typingUsers = [];
                 
                 if (data) {
-                    for (let user in data) {
-                        if (user !== currentUser && data[user] === true) {
-                            t.push(user);
+                    Object.keys(data).forEach(u => {
+                        if (u !== currentUser && data[u]) {
+                            typingUsers.push(u);
                         }
-                    }
+                    });
                 }
                 
-                if (t.length > 0) {
-                    indicator.innerHTML = `<span class="typing-icon">✍️</span> ${t.join(', ')} yazıyor...`;
-                    indicator.style.display = "flex"; // Kesinlikle görünür yap
+                const indicator = document.getElementById('typingIndicator');
+                if (typingUsers.length > 0) {
+                    indicator.innerHTML = `<span class="typing-icon">✍️</span> ${typingUsers.join(', ')} yazıyor...`;
+                    indicator.style.display = "flex";
                 } else {
+                    indicator.style.display = "none";
                     indicator.innerHTML = "";
-                    indicator.style.display = "none"; // Kesinlikle gizle
                 }
             });
             
@@ -727,7 +717,6 @@
             currentRoomRef.push({ sender: currentUser, text: txt, imageUrl: img, fileUrl: file, fileName: fName, audioUrl: audio, timestamp: Date.now(), status: 'sent', replyTo: activeReplyData });
             document.getElementById('messageInput').value = ""; cancelReply(); 
             
-            // Mesaj gidince yazıyor bilgisini anında temizle
             database.ref('typingStatus/'+currentRoom+'/'+currentUser).remove();
             isTyping = false;
             clearTimeout(typingTimeout);
@@ -761,63 +750,61 @@
             rows.forEach(row => { const text = row.getAttribute('data-text'); if(term === "") { row.style.display = "flex"; } else { if(text && text.includes(term)) { row.style.display = "flex"; const bubble = row.querySelector('.message-bubble'); bubble.classList.remove('highlight-msg'); void bubble.offsetWidth; bubble.classList.add('highlight-msg'); } else { row.style.display = "none"; } } });
         }
 
-        // --- GÜVENLİ VE ÇAKIŞMAYAN SES KAYIT SİSTEMİ ---
         let mediaRecorder; 
         let audioChunks = []; 
         const micBtn = document.getElementById('micBtn');
         let isRecordingProcess = false;
 
-        function handleMicPress(e) {
-            e.preventDefault();
-            if(isRecordingProcess) return; // Çift tıklamayı engelle
+        function startRecording(e) {
+            e.preventDefault(); 
+            if (isRecordingProcess) return;
             
-            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => { 
-                mediaRecorder = new MediaRecorder(stream); 
-                mediaRecorder.start(); 
-                isRecordingProcess = true;
-                micBtn.classList.add('recording'); 
+            isRecordingProcess = true;
+            micBtn.classList.add('recording');
+            
+            navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
                 audioChunks = [];
-                
-                mediaRecorder.addEventListener("dataavailable", event => { 
-                    audioChunks.push(event.data); 
-                }); 
-            }).catch(err => { 
-                alert("Mikrofon izni alınamadı! Tarayıcı ayarlarını kontrol edin."); 
+                mediaRecorder.addEventListener("dataavailable", event => {
+                    audioChunks.push(event.data);
+                });
+                mediaRecorder.start();
+            }).catch(err => {
+                isRecordingProcess = false;
+                micBtn.classList.remove('recording');
+                alert("Mikrofon izni alınamadı!");
                 console.error(err);
             });
         }
 
-        function handleMicRelease(e) {
-            if(!isRecordingProcess || !mediaRecorder || mediaRecorder.state === "inactive") return;
-            e.preventDefault();
+        // --- KESİN ÇÖZÜM: 0:00 SES HATASI DÜZELTİLDİ ---
+        function stopRecording(e) {
+            if (!isRecordingProcess || !mediaRecorder || mediaRecorder.state === "inactive") return;
             
-            mediaRecorder.stop(); 
+            mediaRecorder.stop();
             isRecordingProcess = false;
-            micBtn.classList.remove('recording'); 
-            
-            mediaRecorder.addEventListener("stop", () => { 
-                const audioBlob = new Blob(audioChunks); 
-                audioChunks = []; 
-                if(audioBlob.size < 1000) return; // Boş/Hatalı kaydı yollama
+            micBtn.classList.remove('recording');
+
+            mediaRecorder.addEventListener("stop", () => {
+                const audioType = mediaRecorder.mimeType || 'audio/webm';
+                const audioBlob = new Blob(audioChunks, { type: audioType });
+                audioChunks = [];
                 
-                const reader = new FileReader(); 
-                reader.onload = function(event) { 
-                    sendMessage(null, null, null, event.target.result); 
-                }; 
-                reader.readAsDataURL(audioBlob); 
+                if(audioBlob.size > 0) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        sendMessage(null, null, null, event.target.result);
+                    };
+                    reader.readAsDataURL(audioBlob);
+                }
                 
-                // Mikrofon donanımını kapat (Kırmızı ışık sönsün)
                 mediaRecorder.stream.getTracks().forEach(track => track.stop());
-            }); 
+            }, { once: true }); 
         }
 
-        // Butona basılınca başlat
-        micBtn.addEventListener('mousedown', handleMicPress);
-        micBtn.addEventListener('touchstart', handleMicPress, {passive: false});
-        
-        // Elini çekince VEYA fare/parmak butondan dışarı kayınca durdur (Güvenli Sistem)
-        window.addEventListener('mouseup', handleMicRelease);
-        window.addEventListener('touchend', handleMicRelease);
+        micBtn.addEventListener('pointerdown', startRecording);
+        window.addEventListener('pointerup', stopRecording);
+        window.addEventListener('pointercancel', stopRecording);
 
         function openFullscreen(src) { document.getElementById("fullscreenImg").src=src; document.getElementById("fullscreenModal").style.display="flex"; }
         function closeFullscreen() { document.getElementById("fullscreenModal").style.display="none"; }
@@ -825,7 +812,6 @@
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
         function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
         
-        // --- YAZICI: Korumalı ve Akıllı Yazıyor Mantığı ---
         let typingTimeout;
         let isTyping = false;
         
