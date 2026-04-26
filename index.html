@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | Stabil Sürüm (V12.2)</title>
+    <title>Mailmaster Pro | Stabil Sürüm (V12.3 - Anti-Hayalet)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -626,32 +626,20 @@
         function loadMessages() {
             if(currentRoomRef) currentRoomRef.off(); 
             if(roomTypingRef) roomTypingRef.off();
+            if(window.typingCheckInterval) clearInterval(window.typingCheckInterval);
             
             const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
             currentRoomRef = database.ref("rooms/" + currentRoom); 
             
+            // YENİ ANTI-HAYALET SİSTEMİ BAŞLANGICI
+            window.currentTypingData = {};
             roomTypingRef = database.ref("typing/" + currentRoom);
             roomTypingRef.on("value", snap => { 
-                const data = snap.val();
-                const typingUsers = [];
-                
-                if (data) {
-                    Object.keys(data).forEach(u => {
-                        if (u !== currentUser && data[u]) {
-                            typingUsers.push(u);
-                        }
-                    });
-                }
-                
-                const indicator = document.getElementById('typingIndicator');
-                if (typingUsers.length > 0) {
-                    indicator.innerHTML = `<span class="typing-icon">✍️</span> ${typingUsers.join(', ')} yazıyor...`;
-                    indicator.style.display = "flex";
-                } else {
-                    indicator.style.display = "none";
-                    indicator.innerHTML = "";
-                }
+                window.currentTypingData = snap.val() || {};
+                renderTypingIndicator();
             });
+            
+            window.typingCheckInterval = setInterval(renderTypingIndicator, 1000);
             
             currentRoomRef.on("child_added", s => { 
                 const d = s.val(); 
@@ -668,6 +656,31 @@
             });
             currentRoomRef.on("child_changed", s => { const d = s.val(), msgRow = document.getElementById("msg-row-" + s.key); if(msgRow) { if(d.sender === currentUser && d.status === 'read') { const tick = msgRow.querySelector('.msg-ticks'); if(tick) tick.style.color = '#53bdeb'; } updateReactionsDisplay(s.key, d.reactions); } });
             currentRoomRef.on("child_removed", s => { const r = document.getElementById("msg-row-" + s.key); if(r) r.remove(); });
+        }
+
+        // YENİ ANTI-HAYALET FONKSİYONU
+        function renderTypingIndicator() {
+            const typingUsers = [];
+            const now = Date.now();
+            
+            Object.keys(window.currentTypingData).forEach(u => {
+                if (u !== currentUser) {
+                    const timestamp = window.currentTypingData[u];
+                    // Eğer son "yazıyor" sinyalinin üzerinden 4 saniyeden fazla geçmişse kesin kopmuştur, yoksay!
+                    if (now - timestamp < 4000) {
+                        typingUsers.push(u);
+                    }
+                }
+            });
+            
+            const indicator = document.getElementById('typingIndicator');
+            if (typingUsers.length > 0) {
+                indicator.innerHTML = `<span class="typing-icon">✍️</span> ${typingUsers.join(', ')} yazıyor...`;
+                indicator.style.display = "flex";
+            } else {
+                indicator.style.display = "none";
+                indicator.innerHTML = "";
+            }
         }
 
         function renderMessage(id, data) {
@@ -725,7 +738,6 @@
             document.getElementById('messageInput').value = ""; cancelReply(); 
             
             database.ref('typing/'+currentRoom+'/'+currentUser).remove();
-            isTyping = false;
             clearTimeout(typingTimer);
             document.getElementById('messageEmojiPicker').style.display = 'none'; 
         }
@@ -736,28 +748,29 @@
 
         document.getElementById("messageInput").addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
         
-        // --- KORUMA: ACİL DURUM PROTOKOLÜ (HAYALET ENGELLEYİCİ) ---
+        // --- ZAMAN DAMGALI ANTI-HAYALET KORUMASI ---
         let typingTimer;
-        let isTyping = false;
+        let lastTypingTime = 0;
 
         document.getElementById('messageInput').addEventListener('input', function() {
             if (!currentUser || !currentRoom) return;
             const tRef = database.ref('typing/' + currentRoom + '/' + currentUser);
             
             if (this.value.trim().length > 0) {
-                if (!isTyping) {
-                    tRef.set(true);
+                const now = Date.now();
+                // Saniyede sadece 1 kere veritabanına istek at (Aşırı yüklenmeyi önlemek için)
+                if (now - lastTypingTime > 1500) {
+                    tRef.set(now); // Artık 'true' yerine 'şu anki saat' gidiyor!
                     tRef.onDisconnect().remove(); 
-                    isTyping = true;
+                    lastTypingTime = now;
                 }
+                
                 clearTimeout(typingTimer);
                 typingTimer = setTimeout(() => {
                     tRef.remove(); 
-                    isTyping = false;
                 }, 3000); 
             } else {
                 tRef.remove();
-                isTyping = false;
                 clearTimeout(typingTimer);
             }
         });
