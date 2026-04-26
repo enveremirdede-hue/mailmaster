@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | En Gelişmiş Kusursuz Sürüm (V12.0)</title>
+    <title>Mailmaster Pro | Hayalet Korumalı Son Sürüm (V12.1)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -89,7 +89,7 @@
         .action-btn:hover { color: var(--accent); transform: scale(1.1); }
         .action-btn.del:hover { color: #ff4c4c; }
 
-        /* --- EMOJİ PALETİ EKLENTİSİ --- */
+        /* --- EMOJİ PALETİ --- */
         .emoji-picker { display: none; position: absolute; bottom: 35px; background: var(--panel-bg); padding: 5px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 100; gap: 5px; border: 1px solid rgba(134,150,160,0.2); }
         .emoji-picker span { cursor: pointer; font-size: 18px; transition: 0.2s; display: inline-block;}
         .emoji-picker span:hover { transform: scale(1.3); }
@@ -327,9 +327,10 @@
         const userCache = {};
         const pageLoadTime = Date.now();
         let audioCtx;
-        
-        // E2EE Anahtar Değişkeni
         let currentE2EEKey = '';
+
+        // --- GİZLİ RADAR: TÜM ÇEVRİMİÇİ KULLANICILARI TAKİP EDER ---
+        let onlineUsers = {};
 
         let isLightTheme = localStorage.getItem('mailmaster_theme') === 'light';
         applyTheme();
@@ -377,6 +378,14 @@
                     myUserRef.child('state').onDisconnect().set('offline');
                     myUserRef.child('last_changed').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
                     myUserRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
+                }
+            });
+
+            // GİZLİ RADARI ÇALIŞTIR (Herkesin çevrimiçi durumunu anlık kaydeder)
+            database.ref('users').on('value', snap => {
+                const uData = snap.val() || {};
+                for(let u in uData) {
+                    onlineUsers[u] = (uData[u].state === 'online');
                 }
             });
 
@@ -498,14 +507,12 @@
             }
         }
 
-        // ODA DEĞİŞTİRME VE EN YENİ ÖZELLİKLER (E2EE, Video) GÖRÜNÜMÜ
         function changeRoom(roomId, title, isDM, element) {
             document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active')); 
             if(element) element.classList.add('active');
             
             document.getElementById('headerTitle').innerText = isDM ? "Gizli Sohbet: " + title : title; 
             currentRoom = roomId; 
-            
             currentE2EEKey = localStorage.getItem('e2ee_' + currentRoom) || '';
             updateE2EEButtonUI();
 
@@ -546,7 +553,6 @@
             cancelReply(); loadMessages();
         }
 
-        // --- EN YENİ SÜRÜM: E2EE ŞİFRELEME FONKSİYONLARI ---
         function configureE2EE() {
             let userPrompt = prompt("Bu sohbet için E2EE Şifresi belirleyin.\nKarşı tarafın mesajları okuyabilmesi için aynı şifreyi bilmesi gerekir.\n\nŞifrelemeyi kapatmak için kutuyu boş bırakıp Tamam'a basın.", currentE2EEKey);
             if (userPrompt !== null) {
@@ -565,13 +571,8 @@
 
         function updateE2EEButtonUI() {
             const btn = document.getElementById('e2eeBtn');
-            if (currentE2EEKey !== '') {
-                btn.innerHTML = "🟢 E2EE Aktif";
-                btn.style.background = "#00a884";
-            } else {
-                btn.innerHTML = "🔴 E2EE Kapalı";
-                btn.style.background = "#ff4c4c";
-            }
+            if (currentE2EEKey !== '') { btn.innerHTML = "🟢 E2EE Aktif"; btn.style.background = "#00a884"; } 
+            else { btn.innerHTML = "🔴 E2EE Kapalı"; btn.style.background = "#ff4c4c"; }
         }
 
         function encryptMessageText(text) {
@@ -583,17 +584,13 @@
         function decryptMessageText(cipher) {
             if (!cipher || !cipher.startsWith("E2EE::")) return cipher; 
             if (!currentE2EEKey) return "🔒 [Şifreli Mesaj - Okumak İçin Şifre Girin]";
-            
             try {
                 const bytes = CryptoJS.AES.decrypt(cipher.replace("E2EE::", ""), currentE2EEKey);
                 const dec = bytes.toString(CryptoJS.enc.Utf8);
                 return dec ? dec : "🔒 [Şifreli Mesaj - Yanlış Şifre]";
-            } catch(e) {
-                return "🔒 [Şifreli Mesaj - Yanlış Şifre]";
-            }
+            } catch(e) { return "🔒 [Şifreli Mesaj - Yanlış Şifre]"; }
         }
 
-        // --- EN YENİ SÜRÜM: GRUP ÜYELERİ LİSTESİ ---
         function showGroupMembers() {
             document.getElementById('groupMembersModal').style.display = 'flex';
             document.getElementById('groupMembersGroupName').innerText = document.getElementById('headerTitle').innerText + " Üyeleri";
@@ -637,8 +634,6 @@
         }
         function closeGroupMembers() { document.getElementById('groupMembersModal').style.display = 'none'; if(groupMembersRef) { groupMembersRef.off(); groupMembersRef = null; } }
 
-
-        // --- YÜKLEME VE YAZIYOR (TYPING) OKUYUCUSU KORUMA KALKANI ---
         function loadMessages() {
             if(currentRoomRef) currentRoomRef.off(); 
             if(roomTypingRef) roomTypingRef.off();
@@ -646,6 +641,7 @@
             const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
             currentRoomRef = database.ref("rooms/" + currentRoom); 
             
+            // --- KORUMA: ÇİFTE KONTROL UYGULANDI ---
             roomTypingRef = database.ref("typing/" + currentRoom);
             roomTypingRef.on("value", snap => { 
                 const data = snap.val();
@@ -653,7 +649,8 @@
                 
                 if (data) {
                     Object.keys(data).forEach(u => {
-                        if (u !== currentUser && data[u]) {
+                        // SADECE GİZLİ RADARDA (onlineUsers) ÇEVRİMİÇİ OLANLARIN YAZISI GÖRÜNÜR!
+                        if (u !== currentUser && data[u] && onlineUsers[u] === true) {
                             typingUsers.push(u);
                         }
                     });
@@ -699,7 +696,6 @@
             }
             if(data.audioUrl) { hasMedia = true; content += `<div style="margin-bottom:5px;"><audio controls class="audio-player" src="${data.audioUrl}"></audio></div>`; }
             
-            // EN YENİ E2EE ÇÖZÜCÜ VE VİDEO ÇAĞRISI OKUYUCU
             let mesajMetni = decryptMessageText(data.text);
             
             if (mesajMetni === "[VIDEO_CALL_START_SIGNAL]") {
@@ -753,7 +749,7 @@
 
         document.getElementById("messageInput").addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
         
-        // --- 1. KORUMA: HAYALET YAZI (GHOST TYPING) ENGELLEYİCİ ---
+        // --- KORUMA: ACİL DURUM PROTOKOLÜ (HAYALET ENGELLEYİCİ) ---
         let typingTimer;
         let isTyping = false;
 
@@ -764,14 +760,14 @@
             if (this.value.trim().length > 0) {
                 if (!isTyping) {
                     tRef.set(true);
-                    tRef.onDisconnect().remove(); 
+                    tRef.onDisconnect().remove(); // İnternet koparsa anında ibareyi sil
                     isTyping = true;
                 }
                 clearTimeout(typingTimer);
                 typingTimer = setTimeout(() => {
                     tRef.remove(); 
                     isTyping = false;
-                }, 3000);
+                }, 3000); // 3 sn boyunca yazmazsa durdu kabul et
             } else {
                 tRef.remove();
                 isTyping = false;
@@ -832,7 +828,6 @@
             rows.forEach(row => { const text = row.getAttribute('data-text'); if(term === "") { row.style.display = "flex"; } else { if(text && text.includes(term)) { row.style.display = "flex"; const bubble = row.querySelector('.message-bubble'); bubble.classList.remove('highlight-msg'); void bubble.offsetWidth; bubble.classList.add('highlight-msg'); } else { row.style.display = "none"; } } });
         }
 
-        // --- 2. VE 3. KORUMA: ÇAKIŞMAYAN POINTER SES KAYDI & FORMAT ÇÖZÜMÜ ---
         let mediaRecorder; 
         let audioChunks = []; 
         const micBtn = document.getElementById('micBtn');
@@ -892,7 +887,6 @@
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
         function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
         
-        // --- EN YENİ SÜRÜM VİDEO ÇAĞRI FONKSİYONLARI ---
         function startVideoCall() {
             database.ref('rooms/' + currentRoom).push({ sender: currentUser, text: "[VIDEO_CALL_START_SIGNAL]", timestamp: Date.now(), status: 'sent' });
             joinVideoCall(currentRoom);
