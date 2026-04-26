@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Mailmaster Pro | Hayalet Korumalı Son Sürüm (V12.1)</title>
+    <title>Mailmaster Pro | Stabil Sürüm (V12.2)</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -329,9 +329,6 @@
         let audioCtx;
         let currentE2EEKey = '';
 
-        // --- GİZLİ RADAR: TÜM ÇEVRİMİÇİ KULLANICILARI TAKİP EDER ---
-        let onlineUsers = {};
-
         let isLightTheme = localStorage.getItem('mailmaster_theme') === 'light';
         applyTheme();
         function toggleTheme() { isLightTheme = !isLightTheme; localStorage.setItem('mailmaster_theme', isLightTheme ? 'light' : 'dark'); applyTheme(); }
@@ -378,14 +375,6 @@
                     myUserRef.child('state').onDisconnect().set('offline');
                     myUserRef.child('last_changed').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
                     myUserRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
-                }
-            });
-
-            // GİZLİ RADARI ÇALIŞTIR (Herkesin çevrimiçi durumunu anlık kaydeder)
-            database.ref('users').on('value', snap => {
-                const uData = snap.val() || {};
-                for(let u in uData) {
-                    onlineUsers[u] = (uData[u].state === 'online');
                 }
             });
 
@@ -641,7 +630,6 @@
             const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
             currentRoomRef = database.ref("rooms/" + currentRoom); 
             
-            // --- KORUMA: ÇİFTE KONTROL UYGULANDI ---
             roomTypingRef = database.ref("typing/" + currentRoom);
             roomTypingRef.on("value", snap => { 
                 const data = snap.val();
@@ -649,8 +637,7 @@
                 
                 if (data) {
                     Object.keys(data).forEach(u => {
-                        // SADECE GİZLİ RADARDA (onlineUsers) ÇEVRİMİÇİ OLANLARIN YAZISI GÖRÜNÜR!
-                        if (u !== currentUser && data[u] && onlineUsers[u] === true) {
+                        if (u !== currentUser && data[u]) {
                             typingUsers.push(u);
                         }
                     });
@@ -760,14 +747,14 @@
             if (this.value.trim().length > 0) {
                 if (!isTyping) {
                     tRef.set(true);
-                    tRef.onDisconnect().remove(); // İnternet koparsa anında ibareyi sil
+                    tRef.onDisconnect().remove(); 
                     isTyping = true;
                 }
                 clearTimeout(typingTimer);
                 typingTimer = setTimeout(() => {
                     tRef.remove(); 
                     isTyping = false;
-                }, 3000); // 3 sn boyunca yazmazsa durdu kabul et
+                }, 3000); 
             } else {
                 tRef.remove();
                 isTyping = false;
