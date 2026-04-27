@@ -9,7 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-
+    <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js"></script>
     <style>
         /* --- TASARIM (CSS) --- */
         :root {
@@ -217,7 +217,7 @@
         <div id="typingIndicator" class="typing-indicator" style="display: none;"></div>
 
         <div class="bottom-container">
-            <div class="message-emoji-picker" id="messageEmojiPicker"></div>
+            <emoji-picker id="messageEmojiPicker" style="display: none; position: absolute; bottom: 80px; left: 5%; z-index: 200; --num-columns: 8;"></emoji-picker>
 
             <div class="reply-preview" id="replyPreview">
                 <div class="reply-preview-box">
@@ -832,48 +832,28 @@
             }
         });
 
-        const emojiDatabase = {
-            "Yüzler ve Duygular": ['😀','😃','😄','😁','😆','😅','😂','🤣','🥲','☺️','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😗','😙','😚','😋','😛','😝','😜','🤪','🤨','🧐','🤓','😎','🥸','🤩','🥳','😏','😒','😞','😔','😟','😕','🙁','☹️','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤬','🤯','😳','🥵','🥶','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🤥','😶','😐','😑','😬','🙄','😯','😦','😧','😮','😲','🥱','😴','🤤','😪','😵','🤐','🥴','🤢','🤮','🤧','😷','🤒','🤕','🤑','🤠','😈','👿','👹','👺','🤡','💩','👻','💀','☠️','👽','👾','🤖','🎃','😺','😸','😹','😻','😼','😽','🙀','😿','😾'],
-            "Eller ve İnsanlar": ['👋','🤚','🖐','✋','🖖','👌','🤌','🤏','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','🖕','👇','☝️','👍','👎','✊','👊','🤛','🤜','👏','🙌','👐','🤲','🤝','🙏','✍️','💅','🤳','💪','🦾','🦿','🦵','🦶','👂','🦻','👃','🫀','🫁','🧠','🦷','🦴','👀','👁','👅','👄','💋','🩸','👶','👧','🧒','👦','👩','🧑','👨','👵','🧓','👴','👮‍♀️','👮','👮‍♂️','🕵️‍♀️','🕵️','🕵️‍♂️','👩‍⚕️','🧑‍⚕️','👨‍⚕️'],
-            "Hayvanlar ve Doğa": ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼','🐻‍❄️','🐨','🐯','🦁','🐮','🐷','🐽','🐸','🐵','🙈','🙉','🙊','🐒','🐔','🐧','🐦','🐤','🐣','🐥','🦆','🦅','🦉','🦇','🐺','🐗','🐴','🦄','🐝','🪱','🐛','🦋','🐌','🐞','🐜','🪰','🪲','🪳','🦟','🦗','🕷','🦂','🐢','🐍','🦎','🦖','🦕','🐙','🦑','🦐','🦞','🦀','🐡','🐠','🐟','🐬','🐳','🐋','🦈','🦭','🐊','🐅','🐆','🦓','🦍','🦧','🦣','🐘','🦛','🦏','🐪','🐫','🦒','🦘','🐃','🐂','🐄','🐎','🐖','🐏','🐑','🦙','🐐','🦌','🐕','🐩','🦮','🐕‍🦺','🐈','🐈‍⬛','🪶','🐓','🦃','🦤','🦚','🦜','🦢','🦩','🕊','🐇','🦝','🦨','🦡','🦫','🦦','🦥','🐁','🐀','🐿','🦔','🐾','🐉','🐲','🌵','🎄','🌲','🌳','🌴','🪵','🌱','🌿','☘️','🍀','🎍','🪴','🎋','🍃','🍂','🍁','🍄','🐚','🪨','🌾','💐','🌷','🌹','🥀','🌺','🌸','🌼','🌻','🌞','🌝','🌛','🌜','🌚','🌕','🌖','🌗','🌘','🌑','🌒','🌓','🌔','🌙','🌎','🌍','🌏','🪐','💫','⭐️','🌟','✨','⚡️','☄️','💥','🔥','🌪','🌈','☀️','🌤','⛅️','🌥','☁️','🌦','🌧','⛈','🌩','🌨','❄️','☃️','⛄️','🌬','💨','💧','💦','☔️','☂️','🌊','🌫'],
-            "Yiyecek ve İçecek": ['🍏','🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🍈','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🍆','🥑','🥦','🥬','🥒','🌶','🫑','🌽','🥕','🫒','🧄','🧅','🥔','🍠','🥐','🥯','🍞','🥖','🥨','🧀','🥚','🍳','🧈','🥞','🧇','🥓','🥩','🍗','🍖','🦴','🌭','🍔','🍟','🍕','🫓','🥪','🥙','🧆','🌮','🌯','🫔','🥗','🥘','🫕','🥫','🍝','🍜','🍲','🍛','🍣','🍱','🥟','🦪','🍤','🍙','🍚','🍘','🍥','🥠','🥮','🍢','🍡','🍧','🍨','🍦','🥧','🧁','🍰','🎂','🍮','🍭','🍬','🍫','🍿','🍩','🍪','🌰','🥜','🍯','🥛','🍼','🫖','☕️','🍵','🧃','🥤','🧋','🍶','🍺','🍻','🥂','🍷','🥃','🍸','🍹','🧉','🍾','🧊','🥄','🍴','🍽','🥣','🥡','🥢','🧂'],
-            "Aktivite ve Spor": ['⚽️','🏀','🏈','⚾️','🥎','🎾','🏐','🏉','🥏','🎱','🪀','🏓','🏸','🏒','🏑','🥍','🏏','🪃','🥅','⛳️','🪁','🏹','🎣','🤿','🥊','🥋','🎽','🛹','🛼','🛷','⛸','🥌','🎿','⛷','🏂','🏋️‍♀️','🏋️','🏋️‍♂️','🤼‍♀️','🤼','🤼‍♂️','🤸‍♀️','🤸','🤸‍♂️','⛹️‍♀️','⛹️','⛹️‍♂️','🤺','🤾‍♀️','🤾','🤾‍♂️','🏌️‍♀️','🏌️','🏌️‍♂️','🏇','🧘‍♀️','🧘','🧘‍♂️','🏄‍♀️','🏄','🏄‍♂️','🏊‍♀️','🏊','🏊‍♂️','🤽‍♀️','🤽','🤽‍♂️','🚣‍♀️','🚣','🚣‍♂️','🧗‍♀️','🧗','🧗‍♂️','🚵‍♀️','🚴‍♀️','🚴','🚴‍♂️','🏆','🥇','🥈','🥉','🏅','🎖','🏵','🎗','🎫','🎟','🎪','🤹‍♀️','🤹','🤹‍♂️','🎭','🩰','🎨','🎬','🎤','🎧','🎼','🎹','🥁','🪘','🎷','🎺','🪗','🎸','🪕','🎻','🎲','♟','🎯','🎳','🎮','🎰','🧩'],
-            "Semboller ve Kalpler": ['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','☮️','✝️','☪️','🕉','☸️','✡️','🔯','🕎','☯️','☦️','🛐','⛎','♈️','♉️','♊️','♋️','♌️','♍️','♎️','♏️','♐️','♑️','♒️','♓️','🆔','⚛️','🉑','☢️','☣️','📴','📳','🈶','🈚️','🈸','🈺','🈷️','✴️','🆚','💮','🉐','㊙️','㊗️','🈴','🈵','🈹','🈲','🅰️','🅱️','🆎','🆑','🅾️','🆘','❌','⭕️','🛑','⛔️','📛','🚫','💯','💢','♨️','🚷','🚯','🚳','🚱','🔞','📵','🚭','❗️','❕','❓','❔','‼️','⁉️','🔅','🔆','〽️','⚠️','🚸','🔱','⚜️','🔰','♻️','✅','🈯️','💹','❇️','✳️','❎','🌐','💠','Ⓜ️','🌀','💤','🏧','🚾','♿️','🅿️','🛗','🈳','🈂️','🛂','🛃','🛄','🛅','🚹','🚺','🚼','⚧','🎦','📶','🈁','🔣','ℹ️','🔤','🔡','🔠','🆖','🆗','🆙','🆒','🆕','🆓','0️⃣','1️⃣','2️⃣','3️⃣','4️⃣','5️⃣','6️⃣','7️⃣','8️⃣','9️⃣','🔟','🔢','#️⃣','*️⃣','⏏️','▶️','⏸','⏯','⏹','⏺','⏭','⏮','⏩','⏪','⏫','⏬','◀️','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↪️','↩️','⤴️','⤵️','🔀','🔁','🔂','🔄','🔃','🎵','🎶','➕','➖','➗','✖️','♾','💲','💱','™️','©️','®️','〰️','➰','➿','🔚','🔙','🔛','🔝','🔜','✔️','☑️','🔘','🔴','🟠','💛','🟢','🔵','🟣','⚫️','⚪️','🟤','🔺','🔻','🔸','🔹','🔶','🔷','🔳','🔲','▪️','▫️','◾️','◽️','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛️','⬜️','🟫','🔈','🔇','🔉','🔊','🔔','🔕','📣','📢','👁‍🗨','💬','💭','🗯','♠️','♣️','♥️','♦️','🃏','🎴','🀄️']
-        };
-
+       
+ // --- PROFESYONEL EMOJİ MOTORU SİSTEMİ ---
+        const messageEmojiPicker = document.getElementById('messageEmojiPicker');
+        
         function toggleMessageEmojiPicker() {
-            const picker = document.getElementById('messageEmojiPicker');
-            if(picker.style.display === 'flex') { picker.style.display = 'none'; } else { picker.style.display = 'flex'; if(picker.innerHTML === '') { buildEmojiUI(); } }
+            if(messageEmojiPicker.style.display === 'block') {
+                messageEmojiPicker.style.display = 'none';
+            } else {
+                messageEmojiPicker.style.display = 'block';
+                // Eğer karanlık temadaysan motoru karanlık yap
+                if(!isLightTheme) messageEmojiPicker.classList.add('dark');
+                else messageEmojiPicker.classList.remove('dark');
+            }
         }
 
-        function buildEmojiUI() {
-            const picker = document.getElementById('messageEmojiPicker');
-            let html = `<input type="text" id="emojiSearchInput" class="emoji-search-box" placeholder="🔍 Emoji ara... (kalp, gül vb.)" oninput="filterEmojis(this.value)"><div class="emoji-categories"><button class="emoji-cat-btn active" id="cat-Tümü" onclick="switchEmojiCategory('Tümü')">Tümü</button>`;
-            Object.keys(emojiDatabase).forEach(cat => { html += `<button class="emoji-cat-btn" id="cat-${cat.replace(/\s+/g, '')}" onclick="switchEmojiCategory('${cat}')">${cat.split(' ')[0]}</button>`; });
-            html += `</div><div class="emoji-grid-container" id="emojiGridContainer"></div>`;
-            picker.innerHTML = html; switchEmojiCategory('Tümü');
-        }
-
-        function switchEmojiCategory(category) {
-            document.querySelectorAll('.emoji-cat-btn').forEach(btn => btn.classList.remove('active'));
-            if(category === 'Tümü') document.getElementById('cat-Tümü').classList.add('active'); else document.getElementById('cat-' + category.replace(/\s+/g, '')).classList.add('active');
-            const container = document.getElementById('emojiGridContainer'); container.innerHTML = '';
-            if(category === 'Tümü') { Object.keys(emojiDatabase).forEach(cat => { container.innerHTML += `<div class="emoji-group-title">${cat}</div>`; const grid = document.createElement('div'); grid.className = 'emoji-grid'; grid.innerHTML = emojiDatabase[cat].map(e => `<span onclick="insertEmoji('${e}')">${e}</span>`).join(''); container.appendChild(grid); }); } 
-            else { const grid = document.createElement('div'); grid.className = 'emoji-grid'; grid.innerHTML = emojiDatabase[category].map(e => `<span onclick="insertEmoji('${e}')">${e}</span>`).join(''); container.appendChild(grid); }
-        }
-
-        function filterEmojis(term) {
-            term = term.toLowerCase().trim(); const container = document.getElementById('emojiGridContainer');
-            if (term === '') { switchEmojiCategory('Tümü'); return; }
-            document.querySelectorAll('.emoji-cat-btn').forEach(btn => btn.classList.remove('active')); container.innerHTML = ''; const grid = document.createElement('div'); grid.className = 'emoji-grid'; let foundEmojis = [];
-            Object.keys(emojiDatabase).forEach(cat => { if(cat.toLowerCase().includes(term)) foundEmojis = foundEmojis.concat(emojiDatabase[cat]); });
-            if(term.includes('kalp') || term.includes('sev') || term.includes('aşk')) foundEmojis = foundEmojis.concat(['❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❣️','💕','💞','💓','💗','💖','💘','💝','💟','😍','🥰','😘']);
-            if(term.includes('gül') || term.includes('komik') || term.includes('kahkaha')) foundEmojis = foundEmojis.concat(['😀','😃','😄','😁','😆','😅','😂','🤣','🥲']);
-            if(foundEmojis.length > 0) { grid.innerHTML = [...new Set(foundEmojis)].map(e => `<span onclick="insertEmoji('${e}')">${e}</span>`).join(''); container.appendChild(grid); } else { container.innerHTML = '<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:13px;">Sonuç bulunamadı...</div>'; }
-        }
-
-        function insertEmoji(emoji) { const input = document.getElementById('messageInput'); input.value += emoji; input.focus(); input.dispatchEvent(new Event('input')); }
-
+        // Motordan bir emoji seçildiğinde inputa ekle
+        messageEmojiPicker.addEventListener('emoji-click', event => {
+            const input = document.getElementById('messageInput');
+            input.value += event.detail.unicode; // Tıklanan emojiyi al
+            input.focus();
+            input.dispatchEvent(new Event('input')); // Yazıyor... özelliğini tetikle
+        });
         let activeEmojiMessageId = null;
         function toggleEmojiPicker(msgId, btnElement) {
             activeEmojiMessageId = msgId; const picker = document.getElementById('globalEmojiPicker');
