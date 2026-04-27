@@ -744,7 +744,10 @@
             const isMe = (data.sender === currentUser); const time = new Date(data.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute:'2-digit' });
             let content = ""; let hasMedia = false;
             
-            if(data.imageUrl) { hasMedia = true; content += `<div class="image-container"><img src="${data.imageUrl}" class="chat-image" onclick="openFullscreen(this.src)" /><br><a href="${data.imageUrl}" download class="download-btn">⬇️ İndir</a></div>`; }
+            if(data.imageUrl) { 
+    hasMedia = true; 
+    content += `<div class="image-container"><img src="${data.imageUrl}" class="chat-image" onload="document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;" onclick="openFullscreen(this.src)" /><br><a href="${data.imageUrl}" download class="download-btn">⬇️ İndir</a></div>`; 
+}
             if(data.fileUrl && data.fileName) { 
                 hasMedia = true; const fName = data.fileName.toLowerCase();
                 if(fName.endsWith('.mp4') || fName.endsWith('.webm') || fName.endsWith('.mov')) { content += `<div style="margin-bottom:5px;"><video controls style="max-width: 100%; border-radius: 8px; max-height: 300px;" src="${data.fileUrl}"></video><br><a href="${data.fileUrl}" download class="download-btn">⬇️ İndir</a></div>`; } 
