@@ -376,41 +376,37 @@
 
         if (!currentUser) { document.getElementById('authModal').style.display = 'flex'; } else { initUser(); }
 
-        // --- GELİŞTİRİLMİŞ ÇEVRİMİÇİ/ÇEVRİMDIŞI (PRESENCE) SİSTEMİ ---
-        function initUser() {
-            const connectedRef = database.ref('.info/connected');
-            const myUserRef = database.ref('users/' + currentUser);
+       // --- GELİŞTİRİLMİŞ ÇEVRİMİÇİ/ÇEVRİMDIŞI (PRESENCE) SİSTEMİ ---
+function initUser() {
+    const connectedRef = database.ref('.info/connected');
+    const myUserRef = database.ref('users/' + currentUser);
 
-            connectedRef.on('value', (snap) => {
-                if (snap.val() === true) {
-                    myUserRef.child('state').onDisconnect().set('offline');
-                    myUserRef.child('last_changed').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
-                    database.ref('typing/' + currentRoom + '/' + currentUser).onDisconnect().remove();
-                    
-                    myUserRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
-                    document.getElementById('myPresenceText').innerText = "Çevrimiçi";
-                    document.getElementById('myPresenceText').style.color = "var(--accent)";
-                }
-            });
+    connectedRef.on('value', (snap) => {
+        if (snap.val() === true) {
+            // Firebase otomatik kopma algılayıcısı (Senin kodun, harika kısım)
+            myUserRef.child('state').onDisconnect().set('offline');
+            myUserRef.child('last_changed').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
+            database.ref('typing/' + currentRoom + '/' + currentUser).onDisconnect().remove();
+            
+            myUserRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
+            document.getElementById('myPresenceText').innerText = "Çevrimiçi";
+            document.getElementById('myPresenceText').style.color = "var(--accent)";
+        }
+    });
 
-            // Sekme kapanırken ANINDA çevrimdışı yap (Bozukluk çözüm 1)
-            window.addEventListener('beforeunload', () => {
-                myUserRef.update({ state: 'offline', last_changed: firebase.database.ServerValue.TIMESTAMP });
-                database.ref('typing/' + currentRoom + '/' + currentUser).remove();
-            });
-
-            // Sekme arka plana atıldığında (Telefon ekranı kapanması veya sekme değiştirme) (Bozukluk çözüm 2)
-            document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible') {
-                    myUserRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
-                    document.getElementById('myPresenceText').innerText = "Çevrimiçi";
-                    document.getElementById('myPresenceText').style.color = "var(--accent)";
-                } else {
-                    myUserRef.update({ state: 'away', last_changed: firebase.database.ServerValue.TIMESTAMP });
-                    document.getElementById('myPresenceText').innerText = "Uzakta";
-                    document.getElementById('myPresenceText').style.color = "#f0ad4e";
-                }
-            });
+    // Sekme arka plana atıldığında (Telefon ekranı kapanması veya sekme değiştirme)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            myUserRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
+            document.getElementById('myPresenceText').innerText = "Çevrimiçi";
+            document.getElementById('myPresenceText').style.color = "var(--accent)";
+        } else {
+            myUserRef.update({ state: 'away', last_changed: firebase.database.ServerValue.TIMESTAMP });
+            document.getElementById('myPresenceText').innerText = "Uzakta";
+            document.getElementById('myPresenceText').style.color = "#f0ad4e";
+        }
+    });
+}
 
             requestNotificationPermission();
 
