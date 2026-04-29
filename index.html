@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mailmaster Pro | Nihai Sürüm (V14.0)</title>
-    
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
@@ -45,7 +45,7 @@
         .profile-info p { font-size: 13px; color: var(--accent); }
         .top-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 20px; transition: 0.2s; padding: 5px; }
         .top-btn:hover { color: var(--accent); transform: scale(1.1); }
-        
+
         .search-bar { padding: 12px 20px; background-color: var(--sidebar-bg); border-bottom: 1px solid rgba(134, 150, 160, 0.15); transition: 0.3s; }
         .search-bar input { width: 100%; padding: 10px 15px; border-radius: 8px; border: none; background-color: var(--panel-bg); color: var(--text-main); outline: none; font-size: 14px; transition: 0.3s; }
 
@@ -82,7 +82,7 @@
         .message-bubble { padding: 10px 15px; border-radius: 12px; font-size: 15.5px; line-height: 1.5; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.2); transition: 0.3s; word-wrap: break-word; overflow-wrap: anywhere; word-break: break-word; }
         .message-wrapper.sent .message-bubble { background-color: var(--msg-sent); border-top-right-radius: 0; color: var(--msg-text-sent);}
         .message-wrapper.received .message-bubble { background-color: var(--msg-received); border-top-left-radius: 0; color: var(--msg-text-received); }
-        
+
         .msg-actions { display: flex; gap: 5px; opacity: 0; transition: 0.2s; }
         .message-wrapper:hover .msg-actions { opacity: 1; }
         .action-btn { background: var(--panel-bg); color: var(--text-muted); border: 1px solid rgba(134,150,160,0.2); border-radius: 50%; width: 28px; height: 28px; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 12px; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2);}
@@ -92,18 +92,18 @@
         .emoji-picker { display: none; position: absolute; bottom: 35px; background: var(--panel-bg); padding: 5px; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); z-index: 100; gap: 5px; border: 1px solid rgba(134,150,160,0.2); }
         .emoji-picker span { cursor: pointer; font-size: 18px; transition: 0.2s; display: inline-block;}
         .emoji-picker span:hover { transform: scale(1.3); }
-        
+
         .message-emoji-picker { display: none; position: absolute; bottom: 80px; left: 5%; background: var(--panel-bg); border: 1px solid rgba(134,150,160,0.2); border-radius: 12px; padding: 15px; width: 360px; max-width: 90%; height: 350px; flex-direction: column; gap: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 200; overflow: hidden; }
         .emoji-search-box { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(134,150,160,0.2); background: var(--sidebar-bg); color: var(--text-main); outline: none; font-size: 13px; }
         .emoji-categories { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 5px; scrollbar-width: none; }
         .emoji-categories::-webkit-scrollbar { display: none; }
         .emoji-cat-btn { background: var(--chat-bg); border: 1px solid rgba(134,150,160,0.2); color: var(--text-muted); padding: 6px 12px; border-radius: 15px; font-size: 12px; cursor: pointer; white-space: nowrap; transition: 0.2s; }
         .emoji-cat-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-        
+
         .emoji-grid-container { overflow-y: auto; flex-grow: 1; padding-right: 5px; }
         .emoji-grid-container::-webkit-scrollbar { width: 4px; }
         .emoji-grid-container::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
-        
+
         .emoji-group-title { font-size: 12px; color: var(--text-muted); margin: 10px 0 5px; font-weight: bold; text-transform: uppercase; }
         .emoji-grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 8px; }
         .emoji-grid span { cursor: pointer; font-size: 22px; text-align: center; transition: 0.2s; user-select: none; display: flex; justify-content: center; align-items: center; padding: 5px; border-radius: 8px; }
@@ -122,7 +122,7 @@
         .chat-image { max-width: 100%; border-radius: 8px; max-height: 300px; object-fit: cover; cursor: zoom-in; display: block; }
         .file-attachment { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.1); padding: 12px; border-radius: 8px; margin-bottom: 5px; border: 1px solid rgba(134,150,160,0.1); }
         .audio-player { max-width: 250px; height: 40px; border-radius: 20px; outline: none; }
-        
+
         .mic-btn { transition: 0.2s; user-select: none; touch-action: none; cursor: pointer; }
         .mic-btn.recording { color: white; background: #ff4c4c; animation: pulse 1s infinite; box-shadow: 0 0 10px #ff4c4c; }
         @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.15);} 100% {transform: scale(1);} }
@@ -133,21 +133,21 @@
         .bottom-container { background-color: var(--panel-bg); display: flex; flex-direction: column; transition: 0.3s; border-top: 1px solid rgba(134,150,160,0.1); position: relative;}
         .reply-preview { display: none; padding: 10px 10%; background: var(--chat-bg); border-bottom: 1px solid rgba(134,150,160,0.1); align-items: center; gap: 15px; }
         .reply-preview-box { border-left: 4px solid var(--accent); background: var(--panel-bg); padding: 8px 12px; border-radius: 6px; flex-grow: 1; }
-        
+
         .input-area { padding: 15px 10%; display: flex; gap: 12px; align-items: center; }
         .icon-btn { background: none; border: none; color: var(--text-muted); font-size: 22px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;}
         .icon-btn:hover { color: var(--accent); background: rgba(134,150,160,0.1); transform: scale(1.1); }
         .input-area input[type="text"] { flex-grow: 1; padding: 15px 25px; border-radius: 30px; border: none; background-color: var(--sidebar-bg); color: var(--text-main); font-size: 16px; outline: none; transition: 0.3s; border: 1px solid rgba(134,150,160,0.1);}
         .send-btn { background-color: var(--accent); color: white; border: none; width: 50px; height: 50px; border-radius: 50%; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: 0.2s; font-size: 18px; flex-shrink: 0;}
-        
+
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(3px);}
         .modal { background: var(--panel-bg); padding: 30px; border-radius: 15px; width: 400px; max-width: 90%; max-height: 90dvh; overflow-y: auto; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); position: relative;}
         .modal input { width: 100%; padding: 15px; margin-bottom: 10px; border-radius: 8px; border: 1px solid rgba(134,150,160,0.2); background: var(--sidebar-bg); color: var(--text-main); outline: none;}
         .modal button { background: var(--accent); color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; font-size: 15px; margin-top: 5px;}
-        
+
         .fullscreen-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); justify-content: center; align-items: center;}
         .fullscreen-modal-content { max-width: 90%; max-height: 85dvh; border-radius: 8px; }
-        
+
         .group-card { background: var(--sidebar-bg); border: 1px solid rgba(134,150,160,0.2); padding: 20px; border-radius: 10px; margin-bottom: 15px; text-align: left;}
         .download-btn { display: inline-block; margin-top: 5px; padding: 5px 10px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-size: 12px; font-weight: bold; }
         .download-btn:hover { background-color: #45a049; }
@@ -160,7 +160,7 @@
             .msg-search-input:focus { width: 110px; }
             .header-actions button { padding: 6px 8px; font-size: 11px; }
         }
-        
+
         .highlight-msg { animation: highlightAnim 2s; }
         @keyframes highlightAnim { 0% { background-color: rgba(0,168,132,0.5); } 100% { background-color: transparent; } }
     </style>
@@ -177,9 +177,9 @@
             </div>
             <button class="top-btn" onclick="toggleTheme()" id="themeBtn" title="Tema">☀️</button>
         </div>
-        
+
         <div class="search-bar"><input type="text" id="userSearchInput" placeholder="Kişi ara..." onkeypress="handleUserSearch(event)"></div>
-        
+
         <div class="room-list" id="roomList">
             <div class="section-title">Odalar <button class="add-group-btn" onclick="openGroupModal()">➕</button></div>
             <div class="room-item active" onclick="changeRoom('genel', 'Genel Sohbet', false, this)"><div class="room-icon">#</div><div class="room-info"><h4>Genel Sohbet</h4></div></div>
@@ -211,9 +211,9 @@
                 <input type="text" class="msg-search-input" id="msgSearchInput" placeholder="🔍 Ara..." oninput="searchMessages()">
             </div>
         </div>
-        
+
         <div class="messages-area" id="messagesArea"></div>
-        
+
         <div id="typingIndicator" class="typing-indicator" style="display: none;"></div>
 
         <div class="bottom-container">
@@ -260,7 +260,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="modal-overlay" id="gifModal" style="z-index: 2500;">
         <div class="modal" style="width: 480px; padding: 20px; max-width: 95%;">
             <span onclick="closeGifModal()" style="position:absolute; top:10px; right:15px; font-size:28px; cursor:pointer; color: var(--text-muted);">&times;</span>
@@ -303,12 +303,12 @@
             '\x33\x32\x34\x39\x36\x33\x39\x35\x33\x37\x38\x32',
             '\x31\x3a\x33\x32\x34\x39\x36\x33\x39\x35\x33\x37\x38\x32\x3a\x77\x65\x62\x3a\x61\x32\x62\x61\x61\x31\x63\x66\x36\x34\x64\x62\x35\x31\x37\x39\x38\x62\x63\x33\x35\x37'
         ];
-        
+
         const firebaseConfig = { 
             apiKey: _0x2f8a[0], authDomain: _0x2f8a[1], databaseURL: _0x2f8a[2], 
             projectId: _0x2f8a[3], storageBucket: _0x2f8a[4], messagingSenderId: _0x2f8a[5], appId: _0x2f8a[6] 
         };
-        
+
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
 
@@ -375,92 +375,38 @@
         }
 
         if (!currentUser) { document.getElementById('authModal').style.display = 'flex'; } else { initUser(); }
-    function showGroupMembers() {
-            document.getElementById('groupMembersModal').style.display = 'flex';
-            document.getElementById('groupMembersGroupName').innerText = document.getElementById('headerTitle').innerText + " Üyeleri";
-            const list = document.getElementById('groupMembersList');
-            list.innerHTML = ''; 
-            
-            if(groupMembersRef) groupMembersRef.off();
-            groupMembersRef = database.ref('users');
-            
-            // 1. AŞAMA: SADECE YENİ GELENLERİ ÇİZ (1 Kere İndirilir)
-            groupMembersRef.on('child_added', snap => {
-                const uName = snap.key;
-                const uData = snap.val();
-                let isMember = false;
-                
-                if (currentRoom === 'genel' || currentRoom === 'yazilim') { isMember = true; } 
-                else { if (uData.groups && uData.groups.includes(currentRoom)) { isMember = true; } }
-                
-                if (isMember) {
-                    const isOnline = uData.state === 'online';
-                    const isAway = uData.state === 'away';
-                    const dotColor = isOnline ? '#00a884' : (isAway ? '#f0ad4e' : 'white');
-                    const statusTxt = isOnline ? 'Çevrimiçi' : (isAway ? 'Uzakta' : 'Çevrimdışı');
-                    
-                    list.innerHTML += `
-                    <div id="user_row_${uName}" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(134,150,160,0.1); background: var(--chat-bg); margin-bottom: 5px; border-radius: 8px;">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div style="width:35px; height:35px; border-radius:50%; background:linear-gradient(135deg, var(--accent), #007bb5); color:white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:14px; background-size:cover; background-position:center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);" id="member_av_${uName}">${uName.charAt(0).toUpperCase()}</div>
-                            <div style="font-weight:bold; font-size:15px; color:var(--text-main);">${uName} ${uName === currentUser ? '<span style="font-size:11px; color:var(--accent); font-weight:normal;">(Sen)</span>' : ''}</div>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); background: var(--sidebar-bg); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(134,150,160,0.1);">
-                            <span id="status_dot_${uName}" style="width:8px; height:8px; border-radius:50%; background:${dotColor}; ${isOnline ? 'box-shadow: 0 0 5px '+dotColor+';' : ''}"></span> 
-                            <span id="status_txt_${uName}">${statusTxt}</span>
-                        </div>
-                    </div>`;
-                    
-                    // PROFİL FOTOĞRAFI KISMI (Senin eksik kalan kodun)
-                    if(uData.profilePic) { 
-                        setTimeout(() => { 
-                            const av = document.getElementById('member_av_' + uName); 
-                            if(av) { 
-                                av.style.background = `url(${uData.profilePic}) center/cover`; 
-                                av.innerText = ""; 
-                            } 
-                        }, 50); 
-                    }
-                }
-            });
 
-            // LİSTE BOŞSA UYARI VER (Senin kodunun en altındaki kısım)
-            setTimeout(() => {
-                if (list.innerHTML === '') { 
-                    list.innerHTML = '<div style="padding:10px; text-align:center; color:var(--text-muted);">Bu grupta henüz kimse yok.</div>'; 
-                }
-            }, 600); // child_added'ın verileri çekmesi için ufak bir gecikme
+       // --- GELİŞTİRİLMİŞ ÇEVRİMİÇİ/ÇEVRİMDIŞI (PRESENCE) SİSTEMİ ---
+function initUser() {
+    const connectedRef = database.ref('.info/connected');
+    const myUserRef = database.ref('users/' + currentUser);
 
-            // 2. AŞAMA: BİRİ DURUM DEĞİŞTİRİRSE SADECE ONU GÜNCELLE
-            groupMembersRef.on('child_changed', snap => {
-                const uName = snap.key;
-                const uData = snap.val();
-                
-                const isOnline = uData.state === 'online';
-                const isAway = uData.state === 'away';
-                const dotColor = isOnline ? '#00a884' : (isAway ? '#f0ad4e' : 'white');
-                const statusTxt = isOnline ? 'Çevrimiçi' : (isAway ? 'Uzakta' : 'Çevrimdışı');
-                
-                const dotElement = document.getElementById(`status_dot_${uName}`);
-                const txtElement = document.getElementById(`status_txt_${uName}`);
-                
-                if (dotElement && txtElement) {
-                    dotElement.style.background = dotColor;
-                    dotElement.style.boxShadow = isOnline ? `0 0 5px ${dotColor}` : 'none';
-                    txtElement.innerText = statusTxt;
-                }
-                
-                // Eğer kullanıcı sonradan profil resmini değiştirirse onu da anında günceller
-                if(uData.profilePic) { 
-                    const av = document.getElementById('member_av_' + uName); 
-                    if(av) { 
-                        av.style.background = `url(${uData.profilePic}) center/cover`; 
-                        av.innerText = ""; 
-                    } 
-                }
-            });
+    connectedRef.on('value', (snap) => {
+        if (snap.val() === true) {
+            // Firebase otomatik kopma algılayıcısı (Senin kodun, harika kısım)
+            myUserRef.child('state').onDisconnect().set('offline');
+            myUserRef.child('last_changed').onDisconnect().set(firebase.database.ServerValue.TIMESTAMP);
+            database.ref('typing/' + currentRoom + '/' + currentUser).onDisconnect().remove();
+            
+            myUserRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
+            document.getElementById('myPresenceText').innerText = "Çevrimiçi";
+            document.getElementById('myPresenceText').style.color = "var(--accent)";
         }
+    });
 
+    // Sekme arka plana atıldığında (Telefon ekranı kapanması veya sekme değiştirme)
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            myUserRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
+            document.getElementById('myPresenceText').innerText = "Çevrimiçi";
+            document.getElementById('myPresenceText').style.color = "var(--accent)";
+        } else {
+            myUserRef.update({ state: 'away', last_changed: firebase.database.ServerValue.TIMESTAMP });
+            document.getElementById('myPresenceText').innerText = "Uzakta";
+            document.getElementById('myPresenceText').style.color = "#f0ad4e";
+        }
+    });
+}
          // --- GELİŞTİRİLMİŞ ÇEVRİMİÇİ/ÇEVRİMDIŞI (PRESENCE) SİSTEMİ ---
 
         function initUser() {
@@ -602,7 +548,7 @@
 
         function openGroupModal() { document.getElementById('groupModal').style.display = 'flex'; }
         function closeGroupModal() { document.getElementById('groupModal').style.display = 'none'; }
-        
+
         function handleCreateGroup() {
             const n = document.getElementById('newGroupName').value.trim(), p = document.getElementById('newGroupPass').value.trim();
             if(n.length<3 || p.length<3) return alert("En az 3 karakter!");
@@ -612,15 +558,15 @@
             const n = document.getElementById('joinGroupName').value.trim(), p = document.getElementById('joinGroupPass').value.trim();
             database.ref('group_metadata/'+n).once('value').then(s => { if(!s.exists()) alert("Bulunamadı!"); else if(s.val().password === p) { saveAndAddGroup(n); closeGroupModal(); } else alert("Yanlış şifre!"); });
         }
-        
+
         function saveAndAddGroup(g) { 
             if(!myGroups.includes(g)){ myGroups.push(g); localStorage.setItem('mailmaster_groups_'+currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); addGroupToList(g); } 
             changeRoom(g, g, false, document.getElementById('room_'+g)); 
         }
-        
+
         function loadSavedGroups() { myGroups.forEach(g => addGroupToList(g)); }
         function addGroupToList(g) { if(!document.getElementById("room_"+g)) document.getElementById('customGroupList').insertAdjacentHTML('beforeend', `<div class="room-item" id="room_${g}" onclick="changeRoom('${g}', '${g}', false, this)"><div class="room-icon" style="background:#007bb5;color:white;">🔒</div><div class="room-info"><h4>${g}</h4></div></div>`); }
-        
+
         function handleUserSearch(e) {
             if(e.key === "Enter") {
                 const v = document.getElementById('userSearchInput').value.trim();
@@ -629,13 +575,13 @@
             }
         }
         function loadSavedDMs() { myDMs.forEach(t => addDMToList([currentUser, t].sort().join("_"), t)); }
-        
+
         function openDM(t) {
             if(t === currentUser) return; const r = [currentUser, t].sort().join("_");
             if(!myDMs.includes(t)){ myDMs.push(t); localStorage.setItem('mailmaster_dms_'+currentUser, JSON.stringify(myDMs)); database.ref('users/' + currentUser).update({ dms: myDMs }); }
             addDMToList(r, t); changeRoom(r, t, true, document.getElementById("dm_"+r));
         }
-        
+
         function addDMToList(r, t) {
             if(!document.getElementById("dm_"+r)) {
                 document.getElementById('dmList').insertAdjacentHTML('beforeend', `<div class="room-item" id="dm_${r}" onclick="changeRoom('${r}', '${t}', true, this)"><div class="room-icon" id="dm_icon_${t}">👤</div><div class="room-info"><h4>${t}</h4></div></div>`);
@@ -646,7 +592,7 @@
         function changeRoom(roomId, title, isDM, element) {
             document.querySelectorAll('.room-item').forEach(el => el.classList.remove('active')); 
             if(element) element.classList.add('active');
-            
+
             document.getElementById('headerTitle').innerText = isDM ? "Gizli Sohbet: " + title : title; 
             currentRoom = roomId; 
             currentE2EEKey = localStorage.getItem('e2ee_' + currentRoom) || '';
@@ -659,7 +605,7 @@
 
             if (roomId !== 'genel' && roomId !== 'yazilim') { videoBtn.style.display = 'block'; } else { videoBtn.style.display = 'none'; }
             if (leaveBtn) { if (!isDM && roomId !== 'genel' && roomId !== 'yazilim') { leaveBtn.style.display = 'block'; leaveBtn.onclick = leaveCurrentGroup; } else { leaveBtn.style.display = 'none'; } }
-            
+
             if(activeStatusRef) { activeStatusRef.off(); activeStatusRef = null; }
 
             if (isDM) {
@@ -667,7 +613,7 @@
                 groupInfoBtn.style.display = 'none';
                 document.getElementById('headerStatusText').innerText = "Yükleniyor...";
                 document.getElementById('headerStatusDot').style.background = "#8696a0";
-                
+
                 activeStatusRef = database.ref('users/' + title);
                 activeStatusRef.on('value', snap => {
                     const uData = snap.val();
@@ -737,61 +683,38 @@
             document.getElementById('groupMembersModal').style.display = 'flex';
             document.getElementById('groupMembersGroupName').innerText = document.getElementById('headerTitle').innerText + " Üyeleri";
             const list = document.getElementById('groupMembersList');
-            list.innerHTML = ''; 
-            
+            list.innerHTML = '<div style="text-align:center; padding:20px; color: var(--text-muted);">Üyeler yükleniyor...</div>';
+
             if(groupMembersRef) groupMembersRef.off();
             groupMembersRef = database.ref('users');
-            
-            // 1. AŞAMA: SADECE YENİ GELENLERİ ÇİZ (Sadece 1 kez indirilir)
-            groupMembersRef.on('child_added', snap => {
-                const uName = snap.key;
-                const uData = snap.val();
-                let isMember = false;
-                
-                if (currentRoom === 'genel' || currentRoom === 'yazilim') { isMember = true; } 
-                else { if (uData.groups && uData.groups.includes(currentRoom)) { isMember = true; } }
-                
-                if (isMember) {
-                    const isOnline = uData.state === 'online';
-                    const isAway = uData.state === 'away';
-                    const dotColor = isOnline ? '#00a884' : (isAway ? '#f0ad4e' : 'white');
-                    const statusTxt = isOnline ? 'Çevrimiçi' : (isAway ? 'Uzakta' : 'Çevrimdışı');
-                    
-                    list.innerHTML += `
-                    <div id="user_row_${uName}" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(134,150,160,0.1); background: var(--chat-bg); margin-bottom: 5px; border-radius: 8px;">
-                        <div style="display:flex; align-items:center; gap:12px;">
-                            <div style="width:35px; height:35px; border-radius:50%; background:linear-gradient(135deg, var(--accent), #007bb5); color:white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:14px; background-size:cover; background-position:center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);" id="member_av_${uName}">${uName.charAt(0).toUpperCase()}</div>
-                            <div style="font-weight:bold; font-size:15px; color:var(--text-main);">${uName} ${uName === currentUser ? '<span style="font-size:11px; color:var(--accent); font-weight:normal;">(Sen)</span>' : ''}</div>
-                        </div>
-                        <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); background: var(--sidebar-bg); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(134,150,160,0.1);">
-                            <span id="status_dot_${uName}" style="width:8px; height:8px; border-radius:50%; background:${dotColor}; ${isOnline ? 'box-shadow: 0 0 5px '+dotColor+';' : ''}"></span> 
-                            <span id="status_txt_${uName}">${statusTxt}</span>
-                        </div>
-                    </div>`;
-                }
-            });
+            groupMembersRef.on('value', snap => {
+                list.innerHTML = '';
+                const allUsers = snap.val() || {};
 
-            // 2. AŞAMA: BİRİ DURUM DEĞİŞTİRİRSE SADECE ONU GÜNCELLE
-            groupMembersRef.on('child_changed', snap => {
-                const uName = snap.key;
-                const uData = snap.val();
-                
-                const isOnline = uData.state === 'online';
-                const isAway = uData.state === 'away';
-                const dotColor = isOnline ? '#00a884' : (isAway ? '#f0ad4e' : 'white');
-                const statusTxt = isOnline ? 'Çevrimiçi' : (isAway ? 'Uzakta' : 'Çevrimdışı');
-                
-                const dotElement = document.getElementById(`status_dot_${uName}`);
-                const txtElement = document.getElementById(`status_txt_${uName}`);
-                
-                if (dotElement && txtElement) {
-                    dotElement.style.background = dotColor;
-                    dotElement.style.boxShadow = isOnline ? `0 0 5px ${dotColor}` : 'none';
-                    txtElement.innerText = statusTxt;
-                }
-            });
-        }
-                        
+                for (let uName in allUsers) {
+                    const uData = allUsers[uName];
+                    let isMember = false;
+
+                    if (currentRoom === 'genel' || currentRoom === 'yazilim') { isMember = true; } 
+                    else { if (uData.groups && uData.groups.includes(currentRoom)) { isMember = true; } }
+
+                    if (isMember) {
+                        const isOnline = uData.state === 'online';
+                        const isAway = uData.state === 'away';
+                        const dotColor = isOnline ? '#00a884' : (isAway ? '#f0ad4e' : 'white');
+                        const statusTxt = isOnline ? 'Çevrimiçi' : (isAway ? 'Uzakta' : 'Çevrimdışı');
+
+                        list.innerHTML += `
+                        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(134,150,160,0.1); background: var(--chat-bg); margin-bottom: 5px; border-radius: 8px;">
+                            <div style="display:flex; align-items:center; gap:12px;">
+                                <div style="width:35px; height:35px; border-radius:50%; background:linear-gradient(135deg, var(--accent), #007bb5); color:white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:14px; background-size:cover; background-position:center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);" id="member_av_${uName}">${uName.charAt(0).toUpperCase()}</div>
+                                <div style="font-weight:bold; font-size:15px; color:var(--text-main);">${uName} ${uName === currentUser ? '<span style="font-size:11px; color:var(--accent); font-weight:normal;">(Sen)</span>' : ''}</div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); background: var(--sidebar-bg); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(134,150,160,0.1);">
+                                <span style="width:8px; height:8px; border-radius:50%; background:${dotColor}; ${isOnline ? 'box-shadow: 0 0 5px '+dotColor+';' : ''}"></span> ${statusTxt}
+                            </div>
+                        </div>`;
+
                         if(uData.profilePic) { setTimeout(() => { const av = document.getElementById('member_av_' + uName); if(av) { av.style.background = `url(${uData.profilePic}) center/cover`; av.innerText = ""; } }, 50); }
                     }
                 }
@@ -805,7 +728,7 @@
             if(!currentRoom) return;
             const roomTypingRef = database.ref('typing/' + currentRoom);
             if(currentTypingListener) roomTypingRef.off('value', currentTypingListener);
-            
+
             const indicator = document.getElementById('typingIndicator');
             currentTypingListener = roomTypingRef.on('value', (snap) => {
                 let typers = [];
@@ -814,7 +737,7 @@
                         typers.push(child.key);
                     }
                 });
-                
+
                 if (typers.length > 0) {
                     indicator.innerHTML = `<span class="typing-icon">✍️</span> ${typers.join(', ')} yazıyor...`;
                     indicator.style.display = 'flex';
@@ -831,13 +754,13 @@
             if(document.getElementById('gifResults').innerHTML === '') searchGifs('hello'); 
         }
         function closeGifModal() { document.getElementById('gifModal').style.display = 'none'; }
-        
+
         function searchGifs(defaultQuery = null) {
             const q = defaultQuery || document.getElementById('gifSearchInput').value.trim() || 'trending';
             const url = `https://g.tenor.com/v1/search?q=${encodeURIComponent(q)}&key=LIVDSRZULELA&limit=18`;
             const container = document.getElementById('gifResults');
             container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted);">GIF\'ler yükleniyor...</div>';
-            
+
             fetch(url).then(r => r.json()).then(data => {
                 container.innerHTML = '';
                 if(data.results && data.results.length > 0) {
@@ -853,7 +776,7 @@
                 container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: #ff4c4c;">Bağlantı hatası! GIF\'ler yüklenemedi.</div>';
             });
         }
-        
+
         function sendGif(url) {
             sendMessage(url, null, null, null); // GIF'i resim (img) objesi gibi gönder
             closeGifModal();
@@ -864,7 +787,7 @@
             if(currentRoomRef) currentRoomRef.off(); 
             const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
             currentRoomRef = database.ref("rooms/" + currentRoom); 
-            
+
             currentRoomRef.on("child_added", s => { 
                 const d = s.val(); 
                 if(d) { 
@@ -885,7 +808,7 @@
         function renderMessage(id, data) {
             const isMe = (data.sender === currentUser); const time = new Date(data.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute:'2-digit' });
             let content = ""; let hasMedia = false;
-            
+
             if(data.imageUrl) { 
     hasMedia = true; 
     content += `<div class="image-container"><img src="${data.imageUrl}" class="chat-image" onload="document.getElementById('messagesArea').scrollTop = document.getElementById('messagesArea').scrollHeight;" onclick="openFullscreen(this.src)" /><br><a href="${data.imageUrl}" download class="download-btn">⬇️ İndir</a></div>`; 
@@ -897,9 +820,9 @@
                 else { content += `<div class="file-attachment">📄 <a href="${data.fileUrl}" download="${data.fileName}" style="color:var(--accent); font-weight:bold;">${data.fileName} İndir</a></div>`; }
             }
             if(data.audioUrl) { hasMedia = true; content += `<div style="margin-bottom:5px;"><audio controls class="audio-player" src="${data.audioUrl}"></audio></div>`; }
-            
+
             let mesajMetni = decryptMessageText(data.text);
-            
+
             if (mesajMetni === "[VIDEO_CALL_START_SIGNAL]") {
                 mesajMetni = `
                 <div style="background: rgba(0, 168, 132, 0.1); padding: 15px; border-radius: 12px; text-align: center; border: 1px solid var(--accent); margin-top: 5px;">
@@ -912,20 +835,20 @@
 
             let quote = ""; if (data.replyTo) quote = `<div class="quoted-box" onclick="document.getElementById('msg-row-${data.replyTo.id}').scrollIntoView({behavior:'smooth', block:'center'})"><div class="quote-sender">${data.replyTo.sender}</div><div style="font-size:12px;opacity:0.8;">${data.replyTo.snippet}</div></div>`;
             let ticks = isMe ? `<span class="msg-ticks" style="color:${data.status === 'read' ? '#53bdeb' : 'var(--text-muted)'};">✓✓</span>` : "";
-            
+
             let safeText = mesajMetni ? mesajMetni.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
             if (data.text === "[VIDEO_CALL_START_SIGNAL]") safeText = "Görüntülü Arama";
 
             const actions = `<div class="msg-actions"><button class="action-btn" title="Tepki Ver" onclick="toggleEmojiPicker('${id}', this)">😀</button><button class="action-btn" title="Yanıtla" onclick="initiateReply('${id}', '${data.sender}', '${safeText}', ${hasMedia})">↩️</button>${isMe ? `<button class="action-btn del" onclick="deleteMessage('${id}')">🗑️</button>` : ''}</div>`;
 
             const row = document.createElement('div'); row.className = `message-row ${isMe ? 'sent' : 'received'}`; row.id = "msg-row-" + id; row.setAttribute('data-text', (mesajMetni || "").toLowerCase()); 
-            
+
             row.innerHTML = isMe ? `
                 <div class="message-wrapper sent"><div class="message-content-group">${actions}<div class="message-bubble" id="bubble-${id}">${quote} ${content}<div class="message-meta"><span class="message-time">${time}</span> ${ticks}</div><div class="reaction-display" id="reactions-${id}" style="display:none;"></div></div></div></div><div class="msg-avatar" id="avatar-${id}">${data.sender.charAt(0).toUpperCase()}</div>
             ` : `
                 <div class="msg-avatar" id="avatar-${id}" onclick="openDM('${data.sender}')">${data.sender.charAt(0).toUpperCase()}</div><div class="message-wrapper received"><div class="message-sender" onclick="openDM('${data.sender}')">${data.sender}</div><div class="message-content-group"><div class="message-bubble" id="bubble-${id}">${quote} ${content}<div class="message-meta"><span class="message-time">${time}</span> ${ticks}</div><div class="reaction-display" id="reactions-${id}" style="display:none;"></div></div>${actions}</div></div>
             `;
-            
+
             const area = document.getElementById('messagesArea'); area.appendChild(row); area.scrollTop = area.scrollHeight;
             getUserProfilePic(data.sender, p => { const av=document.getElementById('avatar-'+id); if(av&&p){ av.style.background=`url(${p}) center/cover`; av.innerText=""; }}); updateReactionsDisplay(id, data.reactions);
         }
@@ -933,12 +856,12 @@
         function sendMessage(img = null, file = null, fName = null, audio = null) {
             let txt = document.getElementById('messageInput').value.trim();
             if(!txt && !img && !file && !audio) return;
-            
+
             txt = encryptMessageText(txt);
-            
+
             currentRoomRef.push({ sender: currentUser, text: txt, imageUrl: img, fileUrl: file, fileName: fName, audioUrl: audio, timestamp: Date.now(), status: 'sent', replyTo: activeReplyData });
             document.getElementById('messageInput').value = ""; cancelReply(); 
-            
+
             database.ref('typing/'+currentRoom+'/'+currentUser).remove();
             isTyping = false;
             clearTimeout(typingTimer);
@@ -950,21 +873,21 @@
         function deleteMessage(id) { if(confirm("Mesaj silinsin mi?")) currentRoomRef.child(id).remove(); }
 
         document.getElementById("messageInput").addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
-        
+
         let typingTimer;
         let isTyping = false;
 
         document.getElementById('messageInput').addEventListener('input', function() {
             if (!currentUser || !currentRoom) return;
             const tRef = database.ref('typing/' + currentRoom + '/' + currentUser);
-            
+
             if (this.value.trim().length > 0) {
                 if (!isTyping) {
                     tRef.set(true);
                     tRef.onDisconnect().remove(); 
                     isTyping = true;
                 }
-                
+
                 clearTimeout(typingTimer);
                 typingTimer = setTimeout(() => {
                     tRef.remove(); 
@@ -977,10 +900,10 @@
             }
         });
 
-       
+
  // --- PROFESYONEL EMOJİ MOTORU SİSTEMİ ---
         const messageEmojiPicker = document.getElementById('messageEmojiPicker');
-        
+
         function toggleMessageEmojiPicker() {
             if(messageEmojiPicker.style.display === 'block') {
                 messageEmojiPicker.style.display = 'none';
@@ -1006,7 +929,7 @@
             const p = document.getElementById('globalEmojiPicker'); const rect = btnElement.getBoundingClientRect(); p.style.display = "flex"; p.style.left = (rect.left - 50) + "px"; p.style.top = (rect.top - 45) + "px";
         }
         function sendReaction(emoji) { if(!activeEmojiMessageId) return; currentRoomRef.child(activeEmojiMessageId).child('reactions').child(currentUser).set(emoji); document.getElementById('globalEmojiPicker').style.display = "none"; }
-        
+
         document.addEventListener('click', (e) => { 
             if(!e.target.closest('.action-btn') && !e.target.closest('.emoji-picker')) { const p = document.getElementById('globalEmojiPicker'); if(p) p.style.display = "none"; } 
             const msgPicker = document.getElementById('messageEmojiPicker'); const emojiBtn = document.getElementById('emojiBtn'); if(msgPicker && e.target !== msgPicker && e.target !== emojiBtn && !msgPicker.contains(e.target)) { msgPicker.style.display = 'none'; }
@@ -1054,10 +977,10 @@
 
         function openFullscreen(src) { document.getElementById("fullscreenImg").src=src; document.getElementById("fullscreenModal").style.display="flex"; }
         function closeFullscreen() { document.getElementById("fullscreenModal").style.display="none"; }
-        
+
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
         function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
-        
+
         function startVideoCall() { database.ref('rooms/' + currentRoom).push({ sender: currentUser, text: "[VIDEO_CALL_START_SIGNAL]", timestamp: Date.now(), status: 'sent' }); joinVideoCall(currentRoom); }
         function joinVideoCall(roomToJoin) { const temizOdaAdi = roomToJoin.replace(/[^a-zA-Z0-9]/g, ""); const jitsiUrl = `https://meet.jit.si/MailmasterPro_${temizOdaAdi}`; window.open(jitsiUrl, '_blank'); }
     </script>
