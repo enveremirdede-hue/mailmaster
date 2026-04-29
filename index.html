@@ -652,37 +652,60 @@
             document.getElementById('groupMembersModal').style.display = 'flex';
             document.getElementById('groupMembersGroupName').innerText = document.getElementById('headerTitle').innerText + " Üyeleri";
             const list = document.getElementById('groupMembersList');
-            list.innerHTML = '<div style="text-align:center; padding:20px; color: var(--text-muted);">Üyeler yükleniyor...</div>';
+            list.innerHTML = ''; 
             
             if(groupMembersRef) groupMembersRef.off();
             groupMembersRef = database.ref('users');
-            groupMembersRef.on('value', snap => {
-                list.innerHTML = '';
-                const allUsers = snap.val() || {};
+            
+            // 1. AŞAMA: SADECE YENİ GELENLERİ ÇİZ (Sadece 1 kez indirilir)
+            groupMembersRef.on('child_added', snap => {
+                const uName = snap.key;
+                const uData = snap.val();
+                let isMember = false;
                 
-                for (let uName in allUsers) {
-                    const uData = allUsers[uName];
-                    let isMember = false;
+                if (currentRoom === 'genel' || currentRoom === 'yazilim') { isMember = true; } 
+                else { if (uData.groups && uData.groups.includes(currentRoom)) { isMember = true; } }
+                
+                if (isMember) {
+                    const isOnline = uData.state === 'online';
+                    const isAway = uData.state === 'away';
+                    const dotColor = isOnline ? '#00a884' : (isAway ? '#f0ad4e' : 'white');
+                    const statusTxt = isOnline ? 'Çevrimiçi' : (isAway ? 'Uzakta' : 'Çevrimdışı');
                     
-                    if (currentRoom === 'genel' || currentRoom === 'yazilim') { isMember = true; } 
-                    else { if (uData.groups && uData.groups.includes(currentRoom)) { isMember = true; } }
-                    
-                    if (isMember) {
-                        const isOnline = uData.state === 'online';
-                        const isAway = uData.state === 'away';
-                        const dotColor = isOnline ? '#00a884' : (isAway ? '#f0ad4e' : 'white');
-                        const statusTxt = isOnline ? 'Çevrimiçi' : (isAway ? 'Uzakta' : 'Çevrimdışı');
-                        
-                        list.innerHTML += `
-                        <div style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(134,150,160,0.1); background: var(--chat-bg); margin-bottom: 5px; border-radius: 8px;">
-                            <div style="display:flex; align-items:center; gap:12px;">
-                                <div style="width:35px; height:35px; border-radius:50%; background:linear-gradient(135deg, var(--accent), #007bb5); color:white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:14px; background-size:cover; background-position:center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);" id="member_av_${uName}">${uName.charAt(0).toUpperCase()}</div>
-                                <div style="font-weight:bold; font-size:15px; color:var(--text-main);">${uName} ${uName === currentUser ? '<span style="font-size:11px; color:var(--accent); font-weight:normal;">(Sen)</span>' : ''}</div>
-                            </div>
-                            <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); background: var(--sidebar-bg); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(134,150,160,0.1);">
-                                <span style="width:8px; height:8px; border-radius:50%; background:${dotColor}; ${isOnline ? 'box-shadow: 0 0 5px '+dotColor+';' : ''}"></span> ${statusTxt}
-                            </div>
-                        </div>`;
+                    list.innerHTML += `
+                    <div id="user_row_${uName}" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(134,150,160,0.1); background: var(--chat-bg); margin-bottom: 5px; border-radius: 8px;">
+                        <div style="display:flex; align-items:center; gap:12px;">
+                            <div style="width:35px; height:35px; border-radius:50%; background:linear-gradient(135deg, var(--accent), #007bb5); color:white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:14px; background-size:cover; background-position:center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);" id="member_av_${uName}">${uName.charAt(0).toUpperCase()}</div>
+                            <div style="font-weight:bold; font-size:15px; color:var(--text-main);">${uName} ${uName === currentUser ? '<span style="font-size:11px; color:var(--accent); font-weight:normal;">(Sen)</span>' : ''}</div>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); background: var(--sidebar-bg); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(134,150,160,0.1);">
+                            <span id="status_dot_${uName}" style="width:8px; height:8px; border-radius:50%; background:${dotColor}; ${isOnline ? 'box-shadow: 0 0 5px '+dotColor+';' : ''}"></span> 
+                            <span id="status_txt_${uName}">${statusTxt}</span>
+                        </div>
+                    </div>`;
+                }
+            });
+
+            // 2. AŞAMA: BİRİ DURUM DEĞİŞTİRİRSE SADECE ONU GÜNCELLE
+            groupMembersRef.on('child_changed', snap => {
+                const uName = snap.key;
+                const uData = snap.val();
+                
+                const isOnline = uData.state === 'online';
+                const isAway = uData.state === 'away';
+                const dotColor = isOnline ? '#00a884' : (isAway ? '#f0ad4e' : 'white');
+                const statusTxt = isOnline ? 'Çevrimiçi' : (isAway ? 'Uzakta' : 'Çevrimdışı');
+                
+                const dotElement = document.getElementById(`status_dot_${uName}`);
+                const txtElement = document.getElementById(`status_txt_${uName}`);
+                
+                if (dotElement && txtElement) {
+                    dotElement.style.background = dotColor;
+                    dotElement.style.boxShadow = isOnline ? `0 0 5px ${dotColor}` : 'none';
+                    txtElement.innerText = statusTxt;
+                }
+            });
+        }
                         
                         if(uData.profilePic) { setTimeout(() => { const av = document.getElementById('member_av_' + uName); if(av) { av.style.background = `url(${uData.profilePic}) center/cover`; av.innerText = ""; } }, 50); }
                     }
