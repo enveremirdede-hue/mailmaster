@@ -531,19 +531,19 @@ function initUser() {
             });
         }
 
-        const MAX_FILE_SIZE = 5 * 1024 * 1024;
+        const MAX_FILE_SIZE = 7 * 1024 * 1024;
         document.getElementById('profilePicInput').addEventListener('change', function(e) {
             const file = e.target.files[0]; if(!file) return;
-            if(file.size > MAX_FILE_SIZE) { e.target.value=''; return alert("Fotoğraf 5 MB'dan büyük olamaz!"); }
+            if(file.size > MAX_FILE_SIZE) { e.target.value=''; return alert("Fotoğraf 7 MB'dan büyük olamaz!"); }
             const reader = new FileReader(); reader.onload = ev => { database.ref('users/' + currentUser).update({ profilePic: ev.target.result }).then(() => { userCache[currentUser] = ev.target.result; updateProfileUI(); }); }; reader.readAsDataURL(file); e.target.value = '';
         });
 
         document.getElementById('imageInput').addEventListener('change', e => { 
-            const f = e.target.files[0]; if(f){ if(f.size > MAX_FILE_SIZE) { e.target.value=''; return alert("Fotoğraf 5 MB sınırını aştı!"); } const r = new FileReader(); r.onload = ev => sendMessage(ev.target.result); r.readAsDataURL(f); e.target.value=''; }
+            const f = e.target.files[0]; if(f){ if(f.size > MAX_FILE_SIZE) { e.target.value=''; return alert("Fotoğraf 7 MB sınırını aştı!"); } const r = new FileReader(); r.onload = ev => sendMessage(ev.target.result); r.readAsDataURL(f); e.target.value=''; }
         });
 
         document.getElementById('fileInput').addEventListener('change', e => { 
-            const f = e.target.files[0]; if(f){ if(f.size > MAX_FILE_SIZE) { e.target.value=''; return alert("Dosya 5 MB sınırını aştı!"); } const r = new FileReader(); r.onload = ev => sendMessage(null, ev.target.result, f.name); r.readAsDataURL(f); e.target.value=''; }
+            const f = e.target.files[0]; if(f){ if(f.size > MAX_FILE_SIZE) { e.target.value=''; return alert("Dosya 7 MB sınırını aştı!"); } const r = new FileReader(); r.onload = ev => sendMessage(null, ev.target.result, f.name); r.readAsDataURL(f); e.target.value=''; }
         });
 
         function openGroupModal() { document.getElementById('groupModal').style.display = 'flex'; }
