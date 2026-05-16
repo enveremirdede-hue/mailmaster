@@ -207,7 +207,7 @@
                 <button id="groupInfoBtn" onclick="showGroupMembers()" style="display:block; background:var(--panel-bg); color:var(--accent); border:1px solid rgba(134,150,160,0.2); padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">👥 Üyeler</button>
                 <button id="leaveGroupBtn" style="display:none; background:#ff4c4c; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🚪 Çık</button>
                 <button onclick="clearChat()" style="background:var(--panel-bg); color:var(--text-main); border:1px solid rgba(134,150,160,0.2); padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🧹 Temizle</button>
-                <button id="startCallBtn" onclick="startVideoCall()" style="display:none; background:#00a884; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">📹 Görüntülü</button>
+                <button id="startCallBtn" onclick="showCallMenu()" style="display:none; background:#00a884; color:white; border:none; padding:8px 12px; border-radius:8px; cursor:pointer; font-weight:bold; font-size:12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">🎥 Görüntülü</button>
                 <input type="text" class="msg-search-input" id="msgSearchInput" placeholder="🔍 Ara..." oninput="searchMessages()">
             </div>
         </div>
@@ -292,7 +292,21 @@
     </div>
 
     <div class="fullscreen-modal" id="fullscreenModal" onclick="closeFullscreen()"><img class="fullscreen-modal-content" id="fullscreenImg"></div>
-
+    <div class="modal-overlay" id="callOverlay" onclick="hideCallMenu()" style="z-index: 3000;"></div>
+<div class="modal" id="callMenuModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:3001; text-align: center; max-width: 350px;">
+    <h3 style="margin-bottom: 10px; color: var(--accent);">🎥 Görüntülü Arama</h3>
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Lütfen odadaki kişi sayısına göre bir altyapı seçin:</p>
+    
+    <button onclick="startMiroTalkCall()" style="background:#00a884; color:white; border:none; padding:12px; width:100%; border-radius:8px; cursor:pointer; margin-bottom:10px; font-weight:bold; font-size:14px; transition: 0.2s;">
+        ⚡ P2P Hızlı Arama (2-5 Kişi)
+    </button>
+    
+    <button onclick="startJitsiCall()" style="background:#8e44ad; color:white; border:none; padding:12px; width:100%; border-radius:8px; cursor:pointer; margin-bottom:10px; font-weight:bold; font-size:14px; transition: 0.2s;">
+        🏢 Jitsi Toplantısı (Kalabalık)
+    </button>
+    
+    <button onclick="hideCallMenu()" style="background:transparent; color:var(--text-main); border:1px solid rgba(134,150,160,0.2); padding:10px; width:100%; border-radius:8px; cursor:pointer; margin-top:5px;">İptal</button>
+</div>
     <script>
         const _0x2f8a = [
             '\x41\x49\x7a\x61\x53\x79\x41\x31\x62\x7a\x79\x33\x56\x61\x5a\x4a\x77\x55\x77\x6c\x68\x79\x62\x4e\x74\x36\x79\x72\x56\x7a\x75\x72\x51\x73\x72\x63\x71\x4c\x77',
@@ -1019,8 +1033,42 @@ function initUser() {
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
         function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
 
-        function startVideoCall() { database.ref('rooms/' + currentRoom).push({ sender: currentUser, text: "[VIDEO_CALL_START_SIGNAL]", timestamp: Date.now(), status: 'sent' }); joinVideoCall(currentRoom); }
-        function joinVideoCall(roomToJoin) { const temizOdaAdi = roomToJoin.replace(/[^a-zA-Z0-9]/g, ""); const jitsiUrl = `https://meet.jit.si/MailmasterPro_${temizOdaAdi}`; window.open(jitsiUrl, '_blank'); }
+        // --- GÖRÜNTÜLÜ ARAMA MENÜSÜ KONTROLLERİ ---
+        function showCallMenu() {
+    document.getElementById('callOverlay').style.display = 'flex';
+    document.getElementById('callMenuModal').style.display = 'block';
+}
+
+function hideCallMenu() {
+    document.getElementById('callOverlay').style.display = 'none';
+    document.getElementById('callMenuModal').style.display = 'none';
+}
+
+// --- 1. MIROTALK (HIZLI P2P ARAMA) ---
+function startMiroTalkCall() {
+    hideCallMenu(); 
+    const temizOdaAdi = currentRoom.replace(/[^a-zA-Z0-9]/g, "");
+    const roomName = 'MailmasterPro_' + temizOdaAdi + '_Ozel';
+    const callUrl = `https://p2p.mirotalk.com/join/${roomName}`;
+    
+    const mesaj = `*SİSTEM MESAJI:* \n${currentUser}, bu odada GÖRÜNTÜLÜ bir P2P (MiroTalk) araması başlattı!\n\n*(Küçük gruplar içindir)*\nKatılmak için linke tıklayın:\n🔗 <a href="${callUrl}" target="_blank" style="color:#66b2ff;">Görüşmeye Katıl</a>`;
+    
+    database.ref('rooms/' + currentRoom).push({ sender: currentUser, text: mesaj, timestamp: Date.now(), status: 'sent' });
+    window.open(callUrl, '_blank');
+}
+
+// --- 2. JITSI MEET (KALABALIK TOPLANTI) ---
+function startJitsiCall() {
+    hideCallMenu(); 
+    const temizOdaAdi = currentRoom.replace(/[^a-zA-Z0-9]/g, "");
+    const roomName = 'MailmasterPro_Toplanti_' + temizOdaAdi;
+    const jitsiUrl = `https://meet.jit.si/${roomName}`;
+    
+    const mesaj = `*SİSTEM MESAJI:* \n${currentUser}, bu odada GÖRÜNTÜLÜ bir grup toplantısı (Jitsi) başlattı!\n\n*(Kalabalık gruplar içindir)*\nKatılmak için linke tıklayın:\n🔗 <a href="${jitsiUrl}" target="_blank" style="color:#66b2ff;">Toplantıya Katıl</a>`;
+    
+    database.ref('rooms/' + currentRoom).push({ sender: currentUser, text: mesaj, timestamp: Date.now(), status: 'sent' });
+    window.open(jitsiUrl, '_blank');
+}
     </script>
 </body>
 </html>
