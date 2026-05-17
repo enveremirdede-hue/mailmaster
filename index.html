@@ -1032,26 +1032,36 @@ function initUser() {
 
         function clearChat() { if(confirm("Bu odadaki tüm mesajlar HERKES için kalıcı olarak silinecek. Onaylıyor musun?")) { database.ref("rooms/" + currentRoom).remove().then(() => { document.getElementById('messagesArea').innerHTML = ""; alert("Sohbet tertemiz oldu! 🧹"); }); } }
         function leaveCurrentGroup() { if(confirm("Bu gruptan çıkmak istediğine emin misin?")) { myGroups = myGroups.filter(g => g !== currentRoom); localStorage.setItem('mailmaster_groups_' + currentUser, JSON.stringify(myGroups)); database.ref('users/' + currentUser).update({ groups: myGroups }); const roomElement = document.getElementById("room_" + currentRoom); if(roomElement) roomElement.remove(); changeRoom('genel', 'Genel Sohbet', false, document.querySelector('.room-item')); } }
-        // BİLDİRİM İZNİ VE TOKEN ALMA (SENİN BULDUĞUN ÖZEL ANAHTAR ENTEGRE EDİLDİ)
+        // BİLDİRİM İZNİ VE TOKEN ALMA (MAILMASTER KLASÖRÜNE ÖZEL)
 function requestNotificationPermission() {
     console.log('Bildirim izni isteniyor...');
     Notification.requestPermission().then((permission) => {
         if (permission === 'granted') {
-            console.log('Bildirim izni verildi!');
+            console.log('Bildirim izni verildi! Service Worker kaydediliyor...');
             
-            // Senin bulduğun VAPID Key buraya eklendi:
-            firebase.messaging().getToken({ vapidKey: "BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ" })
-            .then((currentToken) => {
-                if (currentToken) {
-                    console.log("FCM Token alındı:", currentToken);
-                    // Token'ı veritabanında bu kullanıcının altına kaydediyoruz
-                    database.ref('users/' + currentUser).update({
-                        fcmToken: currentToken
-                    });
-                }
+            // İŞTE SİHİRLİ DOKUNUŞ BURADA: Yola klasörünün adını (/mailmaster/) ekledik!
+            navigator.serviceWorker.register('/mailmaster/firebase-messaging-sw.js')
+            .then((registration) => {
+                console.log('Service Worker başarıyla kaydedildi:', registration.scope);
+                
+                // ŞİMDİ TOKEN İSTİYORUZ
+                firebase.messaging().getToken({ 
+                    vapidKey: "BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ",
+                    serviceWorkerRegistration: registration 
+                })
+                .then((currentToken) => {
+                    if (currentToken) {
+                        console.log("FCM Token alındı:", currentToken);
+                        database.ref('users/' + currentUser).update({ fcmToken: currentToken });
+                    }
+                }).catch((err) => {
+                    console.log('Token alınırken hata oluştu ', err);
+                });
+
             }).catch((err) => {
-                console.log('Token alınırken hata oluştu ', err);
+                console.log('Service Worker kayıt hatası:', err);
             });
+
         } else {
             console.log('Bildirim izni reddedildi.');
         }
