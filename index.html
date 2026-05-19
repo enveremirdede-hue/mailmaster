@@ -296,7 +296,9 @@
 <div class="modal" id="callMenuModal" style="display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); z-index:3001; text-align: center; max-width: 350px;">
     <h3 style="margin-bottom: 10px; color: var(--accent);">🎥 Görüntülü Arama</h3>
     <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">Lütfen odadaki kişi sayısına göre bir altyapı seçin:</p>
-    
+
+    <button onclick="startMailmasterTalkCall()">MailmasterTalk (Özel)</button>
+
     <button onclick="startMiroTalkCall()" style="background:#00a884; color:white; border:none; padding:12px; width:100%; border-radius:8px; cursor:pointer; margin-bottom:10px; font-weight:bold; font-size:14px; transition: 0.2s;">
         ⚡ P2P Hızlı Arama (2-5 Kişi)
     </button>
@@ -1102,6 +1104,25 @@ function startJitsiCall() {
     
     database.ref('rooms/' + currentRoom).push({ sender: currentUser, text: mesaj, timestamp: Date.now(), status: 'sent' });
     window.open(jitsiUrl, '_blank');
+}
+// --- 3. MAILMASTER TALK (KENDİ ÖZEL SİSTEMİN) ---
+function startMailmasterTalkCall() {
+    hideCallMenu(); 
+    
+    // 1. Mevcut oda adını alıyoruz ve linki bozmasın diye özel karakterleri temizliyoruz
+    const temizOdaAdi = currentRoom.replace(/[^a-zA-Z0-9]/g, "");
+    
+    // 2. Senin MailmasterTalk linkini oluşturuyoruz (Oda adı otomatik olarak sona ekleniyor)
+    const callUrl = `https://enveremirdede-hue.github.io/MailmasterTalk/?room=${temizOdaAdi}`;
+    
+    // 3. Sohbete düşecek şık mesaj
+    const mesaj = `*SİSTEM MESAJI:* \n${currentUser}, bu odada GÖRÜNTÜLÜ bir **MailmasterTalk** araması başlattı!\n\nKatılmak için linke tıklayın:\n🔗 <a href="${callUrl}" target="_blank" style="color:#00a884; font-weight:bold;">Görüşmeye Katıl</a>`;
+    
+    // 4. Mesajı veritabanına gönderiyoruz
+    database.ref('rooms/' + currentRoom).push({ sender: currentUser, text: mesaj, timestamp: Date.now(), status: 'sent' });
+    
+    // 5. Arama penceresini yeni sekmede açıyoruz
+    window.open(callUrl, '_blank');
 }
     </script>
 </body>
