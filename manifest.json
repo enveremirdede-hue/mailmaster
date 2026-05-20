@@ -1,0 +1,17 @@
+{
+  "short_name": "Mailmaster",
+  "name": "Mailmaster Pro Chat",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/733/733585.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/mailmaster/index.html",
+  "background_color": "#111b21",
+  "theme_color": "#00a884",
+  "display": "standalone",
+  "orientation": "portrait"
+}
