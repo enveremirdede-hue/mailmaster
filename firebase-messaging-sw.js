@@ -26,4 +26,9 @@ messaging.onBackgroundMessage(function(payload) {
 
     // return eklemek cihazın hafızasını (RAM) doğru temizlemesini sağlar
     return self.registration.showNotification(notificationTitle, notificationOptions);
+}); // <-- EKSİK OLAN KAPANIŞ BURAYA EKLENDİ!
+
+// PWA kurulumu için tarayıcının zorunlu kıldığı arka plan dinleyicisi
+self.addEventListener('fetch', function(event) {
+    // Sitenin stabil çalışması için burayı boş bırakıyoruz, tetiklenmesi yeterli.
 });
