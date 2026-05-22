@@ -1051,6 +1051,18 @@ function initUser() {
         // BİLDİRİM İZNİ VE TOKEN ALMA (MAILMASTER KLASÖRÜNE ÖZEL)
 function requestNotificationPermission() {
     console.log('Bildirim izni isteniyor...');
+    
+    // 🍏 iPAD / SAFARI ÇÖKME ÖNLEYİCİ KORUMA KALKANI
+    if (typeof Notification === 'undefined') {
+        console.log('Bu cihaz veya tarayıcı bildirim sistemini desteklemiyor (iPad Safari).');
+        
+        // ⚠️ ÇOK ÖNEMLİ NOT: Eğer "Yükleniyor..." ekranını kapatan (Örn: hideLoader() veya loader.style.display = 'none') 
+        // bir kodun varsa, iPad'in uygulamaya giriş yapabilmesi için o kodu TAM BURAYA eklemelisin!
+        
+        return; // iPad için burada dur, aşağıya geçip çökme yaratma.
+    }
+
+    // Eğer cihaz bildirimleri destekliyorsa (Bilgisayar/Android) normal süreç devam eder:
     Notification.requestPermission().then((permission) => {
         if (permission === 'granted') {
             console.log('Bildirim izni verildi! Service Worker kaydediliyor...');
