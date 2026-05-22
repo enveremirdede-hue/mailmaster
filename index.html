@@ -381,10 +381,20 @@
         function applyTheme() { document.body.classList.toggle('light-theme', isLightTheme); document.getElementById('themeBtn').innerText = isLightTheme ? '🌙' : '☀️'; }
 
         document.addEventListener('click', function() {
-            if (Notification.permission !== "granted" && Notification.permission !== "denied") { Notification.requestPermission(); }
-            if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-        }, { once: true });
-
+    // 🍏 iPAD / SAFARI KORUMASI: Notification sistemi var mı diye bakıyoruz
+    if (typeof Notification !== 'undefined') {
+        if (Notification.permission !== "granted" && Notification.permission !== "denied") { 
+            Notification.requestPermission(); 
+        }
+    } else {
+        console.log("Bildirim sistemi bu cihazda desteklenmediği için tıklama esnasında pas geçildi.");
+    }
+    
+    // Ses motorunu (AudioContext) tetikleyen kısım (Burası aynen kalıyor, iPad sever bunu)
+    if (!audioCtx) { 
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+    }
+}, { once: true });
         function playNotificationSound() {
             try {
                 if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
