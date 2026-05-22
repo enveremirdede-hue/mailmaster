@@ -8,6 +8,17 @@
     
     <title>Mailmaster Pro | Nihai Sürüm (V14.2)</title>
 
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            alert("🚨 iPAD HATASI YAKALANDI!\n\nHata: " + message + "\nSatır: " + lineno);
+            return true; 
+        };
+
+        window.addEventListener("unhandledrejection", function(event) {
+            alert("🚨 FİREBASE HATASI YAKALANDI!\n\nSebep: " + event.reason);
+        });
+    </script>
+
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-messaging.js"></script>
