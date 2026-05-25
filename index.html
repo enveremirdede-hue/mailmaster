@@ -1175,6 +1175,68 @@ function startMailmasterTalkCall() {
     // 5. Arama penceresini yeni sekmede açıyoruz
     window.open(callUrl, '_blank');
 }
-    </script>
+
+// 🔥 KUSURSUZ VE YENİ MESAJ DOSTU SCROLL KORUMASI
+setTimeout(() => {
+    const messagesArea = document.getElementById('messagesArea');
+    if (!messagesArea) return;
+
+    let isUserLookingUp = false;
+    let lastScrollTop = messagesArea.scrollTop;
+
+    // Kullanıcının fare veya parmak hareketlerini dinliyoruz
+    messagesArea.addEventListener('scroll', () => {
+        const currentScroll = messagesArea.scrollTop;
+        const distanceToBottom = messagesArea.scrollHeight - currentScroll - messagesArea.clientHeight;
+
+        // Kullanıcı yukarı kaydırdıysa kilidi aç
+        if (currentScroll < lastScrollTop) {
+            isUserLookingUp = true;
+        }
+        
+        // Kullanıcı zaten en alttaysa kilidi kapat
+        if (distanceToBottom < 30) {
+            isUserLookingUp = false;
+        }
+        lastScrollTop = currentScroll;
+    });
+
+    messagesArea.addEventListener('wheel', (e) => { if (e.deltaY < 0) isUserLookingUp = true; });
+    messagesArea.addEventListener('touchmove', () => { isUserLookingUp = true; });
+
+    // Tarayıcının orijinal scroll motorunu ele geçiriyoruz
+    const originalScrollTopDescriptor = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
+
+    Object.defineProperty(messagesArea, 'scrollTop', {
+        get: function() {
+            return originalScrollTopDescriptor.get.call(this);
+        },
+        set: function(newValue) {
+            const maxScroll = this.scrollHeight - this.clientHeight;
+
+            // KURAL 1: Sayfa YENİLENDİĞİNDE veya YENİ MESAJ geldiğinde kod ekranı en alta atmak ister.
+            // Eğer hedef en alt ise (maxScroll), ASLA ENGELLEME! Bırak en alta aksın.
+            if (newValue >= maxScroll - 50) {
+                isUserLookingUp = false; // Kilidi de sıfırla
+                originalScrollTopDescriptor.set.call(this, newValue);
+                lastScrollTop = newValue;
+                return;
+            }
+
+            // KURAL 2: Sadece sen yukarıda mesaj okurken, arkada yüklenen eski GIF'ler/resimler
+            // ekranı ara değerlerde aşağı zıplatmaya çalışırsa o sahte zıplatmayı engelle.
+            if (isUserLookingUp && newValue > lastScrollTop) {
+                return; // Ekranı çivi gibi sabit tut
+            }
+
+            // Normal scroll işlemlerine izin ver
+            originalScrollTopDescriptor.set.call(this, newValue);
+            lastScrollTop = newValue;
+        }
+    });
+    console.log("🚀 Kusursuz Scroll Sistemi Aktif Edildi!");
+}, 400);
+</script>
+     
 </body>
 </html>
