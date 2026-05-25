@@ -69,7 +69,16 @@
         .msg-search-input { padding: 8px 15px; border-radius: 20px; border: none; background: var(--sidebar-bg); color: var(--text-main); outline: none; font-size: 13px; width: 130px; transition: 0.3s; }
         .msg-search-input:focus { width: 180px; box-shadow: 0 0 5px var(--accent); }
 
-        .messages-area { flex-grow: 1; padding: 20px 10% 5px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+        .messages-area { 
+    flex-grow: 1; 
+    /* Alt boşluğu 5px'ten 40px'e çıkardık. GIF'ler ve mesajlar en alta kaydığında */
+    /* "Yazıyor..." uyarısı için aşağıda tertemiz, güvenli bir tampon bölge kalacak. */
+    padding: 20px 10% 40px; 
+    overflow-y: auto; 
+    display: flex; 
+    flex-direction: column; 
+    gap: 15px; 
+}
         .message-row { display: flex; width: 100%; margin-bottom: 5px; align-items: flex-end; gap: 10px; }
         .message-row.sent { justify-content: flex-end; } 
         .message-row.received { justify-content: flex-start; }
@@ -130,7 +139,24 @@
         .mic-btn.recording { color: white; background: #ff4c4c; animation: pulse 1s infinite; box-shadow: 0 0 10px #ff4c4c; }
         @keyframes pulse { 0% {transform: scale(1);} 50% {transform: scale(1.15);} 100% {transform: scale(1);} }
 
-        .typing-indicator { min-height: 20px; font-size: 13px; color: var(--accent); font-style: italic; padding: 0 10%; margin-bottom: 10px; font-weight: 500;}
+        .typing-indicator { 
+    /* Yapısal boyutları sıfırlıyoruz. Tarayıcı bunu 0 piksel görür. */
+    /* Böylece ne ekrandaki devasa bir GIF ne de normal bir yazı bunu sıkıştıramaz, yerini kaydıramaz. */
+    height: 0;
+    min-height: 0; 
+    margin-bottom: 0;
+    
+    font-size: 13px; 
+    color: var(--accent); 
+    font-style: italic; 
+    padding: 0 10%; 
+    font-weight: 500;
+    
+    /* Sihirli Konumlandırma: */
+    position: relative;
+    top: -32px; /* Sıfır dikey alan kaplayıp, kendini mesaj alanının altındaki 40px'lik boşluğa fırlatır */
+    pointer-events: none; /* Arkasındaki elementlere tıklanmayı engellemez */
+}
         .typing-icon { animation: pulse 1s infinite; display: inline-block; font-style: normal; margin-right: 5px;}
 
         .bottom-container { background-color: var(--panel-bg); display: flex; flex-direction: column; transition: 0.3s; border-top: 1px solid rgba(134,150,160,0.1); position: relative;}
