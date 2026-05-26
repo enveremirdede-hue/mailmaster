@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terms of Service - Mailmaster Pro Chat</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; color: #f1f5f9; background-color: #0f172a; padding: 40px 20px; max-width: 800px; margin: 0 auto; }
+        h1 { color: #38bdf8; border-bottom: 1px solid #334155; padding-bottom: 10px; }
+        h2 { color: #f1f5f9; margin-top: 30px; }
+        a { color: #38bdf8; text-decoration: none; }
+        .lang-section { display: none; }
+    </style>
+</head>
+<body>
+
+    <div id="lang-tr" class="lang-section">
+        <h1>Kullanım Şartları</h1>
+        <p><strong>Son Güncelleme: Mayıs 2026</strong></p>
+        <p>Mailmaster Pro Chat uygulamasını indirerek, kurarak veya kullanarak bu Kullanım Şartlarına bağlı kalmayı kabul etmiş olursunuz.</p>
+        
+        <h2>1. Kullanım Lisansı</h2>
+        <p>Mailmaster Pro Chat'in bir kopyasını yalnızca kişisel, ticari olmayan geçici görüntüleme ve kullanım için indirmeye izin verilir.</p>
+        
+        <h2>2. Sorumluluk Reddi</h2>
+        <p>Mailmaster Pro Chat içerisindeki materyaller 'olduğu gibi' sunulmaktadır. Ticari elverişlilik veya belirli bir amaca uygunluk gibi zımni garantiler de dahil olmak üzere hiçbir açık veya zımni garanti verilmez.</p>
+        
+        <h2>3. Sorumluluk Sınırlamaları</h2>
+        <p>Hiçbir durumda Mailmaster Pro Chat veya geliştiricileri, yazılımın kullanılmasından veya kullanılamamasından doğan zararlardan (veri veya kar kaybı dahil) sorumlu tutulamaz.</p>
+        
+        <h2>4. Geçerli Kanun</h2>
+        <p>Mailmaster Pro Chat ile ilgili her türlü talep, kanunlar ihtilafı hükümlerine bakılmaksızın yerel yasalara tabi olacaktır.</p>
+    </div>
+
+    <div id="lang-en" class="lang-section">
+        <h1>Terms of Service</h1>
+        <p><strong>Last Updated: May 2026</strong></p>
+        <p>By downloading, installing, or using Mailmaster Pro Chat, you agree to be bound by these Terms of Service.</p>
+        
+        <h2>1. Use License</h2>
+        <p>Permission is granted to download a copy of Mailmaster Pro Chat for personal, non-commercial transitory viewing and usage only.</p>
+        
+        <h2>2. Disclaimer</h2>
+        <p>The materials within Mailmaster Pro Chat are provided on an 'as is' basis. We make no warranties, expressed or implied, and hereby disclaim all other warranties including, without limitation, implied warranties or conditions of merchantability or fitness for a particular purpose.</p>
+        
+        <h2>3. Limitations of Liability</h2>
+        <p>In no event shall Mailmaster Pro Chat or its developers be liable for any damages (including, without limitation, damages for loss of data or profit, or due to business interruption) arising out of the use or inability to use the software.</p>
+        
+        <h2>4. Governing Law</h2>
+        <p>Any claim relating to Mailmaster Pro Chat shall be governed by local laws without regard to its conflict of law provisions.</p>
+    </div>
+
+    <div id="lang-de" class="lang-section">
+        <h1>Nutzungsbedingungen</h1>
+        <p><strong>Zuletzt aktualisiert: Mai 2026</strong></p>
+        <p>Durch das Herunterladen, Installieren oder Verwenden von Mailmaster Pro Chat erklären Sie sich mit diesen Nutzungsbedingungen einverstanden.</p>
+        
+        <h2>1. Nutzungslizenz</h2>
+        <p>Es wird die Erlaubnis erteilt, eine Kopie von Mailmaster Pro Chat ausschließlich für den persönlichen, nicht-kommerziellen vorübergehenden Gebrauch herunterzuladen.</p>
+        
+        <h2>2. Haftungsausschluss</h2>
+        <p>Die Materialien in Mailmaster Pro Chat werden 'wie besehen' bereitgestellt. Wir geben keine ausdrücklichen oder stillschweigenden Garantien ab und lehnen hiermit alle anderen Garantien ab.</p>
+        
+        <h2>3. Haftungsbeschränkungen</h2>
+        <p>In keinem Fall sind Mailmaster Pro Chat oder seine Entwickler für Schäden (einschließlich Schäden aus Daten- oder Gewinnverlust oder aufgrund von Geschäftsunterbrechungen) haftbar, die aus der Nutzung oder Unfähigkeit zur Nutzung der Software entstehen.</p>
+        
+        <h2>4. Anwendbares Recht</h2>
+        <p>Alle Ansprüche im Zusammenhang mit Mailmaster Pro Chat unterliegen den lokalen Gesetzen, ohne Rücksicht auf die Bestimmungen des Kollisionsrechts.</p>
+    </div>
+
+    <script>
+        const userLang = navigator.language || navigator.userLanguage;
+        if (userLang.startsWith('tr')) {
+            document.getElementById('lang-tr').style.display = 'block';
+            document.documentElement.lang = 'tr';
+        } else if (userLang.startsWith('de')) {
+            document.getElementById('lang-de').style.display = 'block';
+            document.documentElement.lang = 'de';
+        } else {
+            document.getElementById('lang-en').style.display = 'block'; // Varsayılan İngilizce
+            document.documentElement.lang = 'en';
+        }
+    </script>
+</body>
+</html>
