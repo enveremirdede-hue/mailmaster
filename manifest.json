@@ -3,13 +3,13 @@
   "name": "Mailmaster Pro Chat",
   "icons": [
     {
-      "src": "logo.png",
+      "src": "/mailmaster/logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "logo.png",
+      "src": "/mailmaster/logo.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -18,5 +18,6 @@
   "start_url": "/mailmaster/index.html",
   "background_color": "#0F172A",
   "theme_color": "#0284C7",
-  "display": "standalone"
+  "display": "standalone",
+  "scope": "/mailmaster/"
 }
