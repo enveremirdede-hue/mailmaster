@@ -10,7 +10,7 @@
     },
     {
       "src": "/mailmaster/logo.png",
-      "sizes": "512x512",
+      "sizes": "/mailmaster/logo.png",
       "type": "image/png",
       "purpose": "maskable"
     }
@@ -19,5 +19,21 @@
   "background_color": "#0F172A",
   "theme_color": "#0284C7",
   "display": "standalone",
-  "scope": "/mailmaster/"
+  "scope": "/mailmaster/",
+  "screenshots": [
+    {
+      "src": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1000",
+      "sizes": "1000x600",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "label": "Mailmaster Masaüstü Görünümü"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600",
+      "sizes": "600x1000",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "label": "Mailmaster Mobil Görünümü"
+    }
+  ]
 }
