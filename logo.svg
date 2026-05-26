@@ -1,13 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <defs>
     <linearGradient id="mailmasterGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#0F172A" /> <stop offset="100%" stop-color="#0284C7" /> </linearGradient>
+      <stop offset="0%" stop-color="#0F172A" /> 
+      <stop offset="100%" stop-color="#0284C7" /> 
+    </linearGradient>
     <linearGradient id="iconGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#38BDF8" /> <stop offset="100%" stop-color="#0EA5E9" /> </linearGradient>
+      <stop offset="0%" stop-color="#38BDF8" /> 
+      <stop offset="100%" stop-color="#0EA5E9" /> 
+    </linearGradient>
   </defs>
   
   <rect width="512" height="512" rx="128" fill="url(#mailmasterGrad)"/>
   
-  <path fill="url(#iconGrad)" d="M112 160l144 112 144-112v192h-48V232l-96 72-96-72v120H112V160z"/>
-  <path fill="#ffffff" opacity="0.8" d="M256 272l144-112H112l144 112z"/>
+  <g transform="translate(48, 48) scale(0.81)">
+    <path fill="url(#iconGrad)" d="M112 160l144 112 144-112v192h-48V232l-96 72-96-72v120H112V160z"/>
+    <path fill="#ffffff" opacity="0.8" d="M256 272l144-112H112l144 112z"/>
+  </g>
 </svg>
