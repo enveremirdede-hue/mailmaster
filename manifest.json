@@ -3,15 +3,14 @@
   "name": "Mailmaster Pro Chat",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/733/733585.png",
+      "src": "logo.svg",
       "sizes": "512x512",
-      "type": "image/png",
+      "type": "image/svg+xml",
       "purpose": "any maskable"
     }
   ],
   "start_url": "/mailmaster/index.html",
-  "background_color": "#111b21",
-  "theme_color": "#00a884",
-  "display": "standalone",
-  "orientation": "portrait"
+  "background_color": "#0F172A",
+  "theme_color": "#0284C7",
+  "display": "standalone"
 }
