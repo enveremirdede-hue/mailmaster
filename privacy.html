@@ -10,9 +10,13 @@
         h2 { color: #f1f5f9; margin-top: 30px; }
         a { color: #38bdf8; text-decoration: none; }
         .lang-section { display: none; }
+        .back-btn { display: inline-block; margin-bottom: 20px; padding: 10px 18px; background-color: #1e293b; color: #38bdf8; border: 1px solid #334155; border-radius: 6px; font-size: 14px; font-weight: 500; transition: all 0.2s; }
+        .back-btn:hover { background-color: #38bdf8; color: #0f172a; }
     </style>
 </head>
 <body>
+
+    <a href="./index.html" id="back-home-btn" class="back-btn">Back to Home</a>
 
     <div id="lang-tr" class="lang-section">
         <h1>Gizlilik Politikası</h1>
@@ -70,15 +74,20 @@
 
     <script>
         const userLang = navigator.language || navigator.userLanguage;
+        const btn = document.getElementById('back-home-btn');
+        
         if (userLang.startsWith('tr')) {
             document.getElementById('lang-tr').style.display = 'block';
             document.documentElement.lang = 'tr';
+            btn.textContent = '← Ana Sayfaya Dön';
         } else if (userLang.startsWith('de')) {
             document.getElementById('lang-de').style.display = 'block';
             document.documentElement.lang = 'de';
+            btn.textContent = '← Zurück zur Startseite';
         } else {
-            document.getElementById('lang-en').style.display = 'block'; // Varsayılan İngilizce
+            document.getElementById('lang-en').style.display = 'block';
             document.documentElement.lang = 'en';
+            btn.textContent = '← Back to Home';
         }
     </script>
 </body>
