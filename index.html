@@ -879,28 +879,175 @@ function initUser() {
             closeGifModal();
         }
 
-        // --- MESAJ YÜKLEME ---
-        function loadMessages() {
-            if(currentRoomRef) currentRoomRef.off(); 
-            const area = document.getElementById('messagesArea'); area.innerHTML = ""; 
-            currentRoomRef = database.ref("rooms/" + currentRoom); 
+        // =========================================================================
+// 🔥 MAILMASTER PRO - PREMIUM YÜKLEME EKRANI & KUSURSUZ SAYFALAMA 🔥
+// =========================================================================
+let currentMessageLimit = 50; 
+let isLoadingMore = false;     
+let loadedMessageKeys = new Set();
+let oldestMessageTimestamp = Infinity; 
 
-            currentRoomRef.on("child_added", s => { 
-                const d = s.val(); 
-                if(d) { 
-                    renderMessage(s.key, d); 
-                    if(d.sender !== currentUser && d.status !== 'read') {
-                        currentRoomRef.child(s.key).update({ status: 'read' });
-                        if (d.timestamp > pageLoadTime) {
-                            if (document.hidden) { let notifText = d.text ? decryptMessageText(d.text) : (d.imageUrl ? "📷 Fotoğraf/GIF" : "📁 Dosya/Ses"); showDesktopNotification(d.sender, notifText); }
-                            playNotificationSound();
-                        }
-                    } 
-                } 
-            });
-            currentRoomRef.on("child_changed", s => { const d = s.val(), msgRow = document.getElementById("msg-row-" + s.key); if(msgRow) { if(d.sender === currentUser && d.status === 'read') { const tick = msgRow.querySelector('.msg-ticks'); if(tick) tick.style.color = '#53bdeb'; } updateReactionsDisplay(s.key, d.reactions); } });
-            currentRoomRef.on("child_removed", s => { const r = document.getElementById("msg-row-" + s.key); if(r) r.remove(); });
+// 1. Odaya ilk tıklandığında açılan Büyük "MAILMASTER" Yükleme Ekranı
+function showFullMailmasterLoader() {
+    let loader = document.getElementById('mailmasterChatLoader');
+    if (!loader) {
+        loader = document.createElement('div');
+        loader.id = 'mailmasterChatLoader';
+        loader.style.cssText = `
+            position: absolute; top: 65px; left: 0; width: 100%; height: calc(100% - 65px);
+            background-color: var(--chat-bg); display: flex; flex-direction: column;
+            justify-content: center; align-items: center; z-index: 999;
+            transition: opacity 0.25s ease;
+        `;
+        loader.innerHTML = `
+            <div style="font-size: 32px; font-weight: 900; color: var(--accent); letter-spacing: 5px; margin-bottom: 20px; font-family: 'Segoe UI', sans-serif; animation: mmPulseText 1.5s infinite alternate;">MAILMASTER</div>
+            <div class="mm-spinner" style="width: 45px; height: 45px; border: 4px solid rgba(134,150,160,0.1); border-top: 4px solid var(--accent); border-radius: 50%; animation: mmSpin 0.7s linear infinite; margin-bottom: 20px; box-shadow: 0 0 15px rgba(0,168,132,0.1);"></div>
+            <div style="font-size: 14px; color: var(--text-muted); font-style: italic; letter-spacing: 0.5px;">Mesajlar yükleniyor...</div>
+        `;
+        if (!document.getElementById('mm-loader-styles')) {
+            const style = document.createElement('style');
+            style.id = 'mm-loader-styles';
+            style.innerHTML = `
+                @keyframes mmSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                @keyframes mmPulseText { 0% { opacity: 0.5; transform: scale(0.96); } 100% { opacity: 1; transform: scale(1); } }
+            `;
+            document.head.appendChild(style);
         }
+        document.querySelector('.chat-window').appendChild(loader);
+    }
+    loader.style.display = 'flex';
+    loader.style.opacity = '1';
+}
+
+function hideFullMailmasterLoader() {
+    const loader = document.getElementById('mailmasterChatLoader');
+    if (loader) {
+        loader.style.opacity = '0';
+        setTimeout(() => { loader.style.display = 'none'; }, 250);
+    }
+}
+
+// 2. Yenilenen Akıllı Mesaj Yükleme Motoru
+function loadMessages(isLoadMore = false, oldScrollHeight = 0) {
+    if(currentRoomRef) currentRoomRef.off();
+    const area = document.getElementById('messagesArea');
+    
+    // Yukarı kaydırırken kibar yazı, ilk girişte BÜYÜK EKRAN
+    let miniLoader = document.getElementById('mmMiniLoader');
+    if (isLoadMore) {
+        if (!miniLoader) {
+            miniLoader = document.createElement('div');
+            miniLoader.id = 'mmMiniLoader';
+            miniLoader.style.cssText = "text-align: center; padding: 10px; color: #8696a0; font-size: 13px; font-style: italic;";
+            miniLoader.innerText = "Eski mesajlar yükleniyor...";
+            area.prepend(miniLoader);
+        }
+    } else {
+        currentMessageLimit = 50;
+        loadedMessageKeys.clear();
+        oldestMessageTimestamp = Infinity;
+        area.innerHTML = "";
+        showFullMailmasterLoader(); // 🔥 İŞTE BURADA BÜYÜK EKRANI PATLATIYORUZ!
+    }
+
+    currentRoomRef = database.ref("rooms/" + currentRoom);
+    const queryRef = currentRoomRef.limitToLast(currentMessageLimit);
+
+    // Orijinal kodun scroll'u aşağı fırlatmasını geçici engelleme
+    const originalScrollTop = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
+    if (isLoadMore) {
+        Object.defineProperty(area, 'scrollTop', {
+            set: function(val) {},
+            get: originalScrollTop.get,
+            configurable: true
+        });
+    }
+
+    queryRef.once("value").then(snapshot => {
+        let messages = [];
+        snapshot.forEach(child => { messages.push({ key: child.key, val: child.val() }); });
+
+        if (isLoadMore) {
+            area.innerHTML = ""; 
+            loadedMessageKeys.clear();
+        } else {
+            hideFullMailmasterLoader(); // 🔥 MESAJLAR GELDİ, BÜYÜK EKRANI KAPAT!
+        }
+
+        messages.forEach(msg => {
+            if (!loadedMessageKeys.has(msg.key)) {
+                loadedMessageKeys.add(msg.key);
+                if (msg.val.timestamp < oldestMessageTimestamp) oldestMessageTimestamp = msg.val.timestamp;
+                renderMessage(msg.key, msg.val);
+            }
+        });
+
+        if (isLoadMore) {
+            Object.defineProperty(area, 'scrollTop', originalScrollTop); 
+            area.scrollTop = area.scrollHeight - oldScrollHeight; 
+            setTimeout(() => { isLoadingMore = false; }, 100);
+        } else {
+            area.scrollTop = area.scrollHeight;
+        }
+
+        // Canlı Dinleyiciler
+        queryRef.on("child_added", s => {
+            const d = s.val();
+            if(d && !loadedMessageKeys.has(s.key)) {
+                
+                // Mesaj silindiğinde en alta düşen "hayalet" mesaj filtresi
+                if (d.timestamp < oldestMessageTimestamp && loadedMessageKeys.size >= 49) return; 
+
+                loadedMessageKeys.add(s.key);
+                renderMessage(s.key, d);
+
+                if(d.sender !== currentUser && d.status !== 'read') {
+                    currentRoomRef.child(s.key).update({ status: 'read' });
+                    if (d.timestamp > pageLoadTime) {
+                        if (document.hidden) {
+                            let notifText = d.text ? decryptMessageText(d.text) : (d.imageUrl ? "📷 Fotoğraf/GIF" : "📁 Dosya/Ses");
+                            showDesktopNotification(d.sender, notifText);
+                        }
+                        playNotificationSound();
+                    }
+                }
+            }
+        });
+
+        queryRef.on("child_changed", s => {
+            const d = s.val(), msgRow = document.getElementById("msg-row-" + s.key);
+            if(msgRow) {
+                if(d.sender === currentUser && d.status === 'read') {
+                    const tick = msgRow.querySelector('.msg-ticks');
+                    if(tick) tick.style.color = '#53bdeb';
+                }
+                updateReactionsDisplay(s.key, d.reactions);
+            }
+        });
+
+        queryRef.on("child_removed", s => {
+            const r = document.getElementById("msg-row-" + s.key);
+            if(r) {
+                r.remove();
+                loadedMessageKeys.delete(s.key);
+            }
+        });
+    });
+}
+
+// =========================================================================
+// 🔄 EN YUKARIYA GELİNDİĞİNDE TETİKLENEN SCROLL DİNLEYİCİSİ
+// =========================================================================
+document.getElementById('messagesArea').addEventListener('scroll', function() {
+    if (this.scrollTop <= 5 && !isLoadingMore) {
+        if (this.children.length >= currentMessageLimit) {
+            isLoadingMore = true;
+            const oldHeight = this.scrollHeight; 
+            currentMessageLimit += 50; 
+            loadMessages(true, oldHeight);
+        }
+    }
+});
 
         function renderMessage(id, data) {
             const isMe = (data.sender === currentUser); const time = new Date(data.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute:'2-digit' });
