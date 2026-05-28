@@ -880,14 +880,10 @@ function initUser() {
         }
 
         // =========================================================================
-// 🔥 MAILMASTER PRO - PREMIUM YÜKLEME EKRANI & KUSURSUZ SAYFALAMA 🔥
+// 🔥 MAILMASTER PRO - SIFIR HATA, LİMİTSİZ, SADECE PREMİUM YÜKLEME EKRANI 🔥
 // =========================================================================
-let currentMessageLimit = 50; 
-let isLoadingMore = false;     
-let loadedMessageKeys = new Set();
-let oldestMessageTimestamp = Infinity; 
 
-// 1. Odaya ilk tıklandığında açılan Büyük "MAILMASTER" Yükleme Ekranı
+// 1. Odaya ilk tıklandığında açılan Mükemmel "MAILMASTER" Yükleme Ekranı
 function showFullMailmasterLoader() {
     let loader = document.getElementById('mailmasterChatLoader');
     if (!loader) {
@@ -927,127 +923,59 @@ function hideFullMailmasterLoader() {
     }
 }
 
-// 2. Yenilenen Akıllı Mesaj Yükleme Motoru
-function loadMessages(isLoadMore = false, oldScrollHeight = 0) {
-    if(currentRoomRef) currentRoomRef.off();
-    const area = document.getElementById('messagesArea');
-    
-    // Yukarı kaydırırken kibar yazı, ilk girişte BÜYÜK EKRAN
-    let miniLoader = document.getElementById('mmMiniLoader');
-    if (isLoadMore) {
-        if (!miniLoader) {
-            miniLoader = document.createElement('div');
-            miniLoader.id = 'mmMiniLoader';
-            miniLoader.style.cssText = "text-align: center; padding: 10px; color: #8696a0; font-size: 13px; font-style: italic;";
-            miniLoader.innerText = "Eski mesajlar yükleniyor...";
-            area.prepend(miniLoader);
-        }
-    } else {
-        currentMessageLimit = 50;
-        loadedMessageKeys.clear();
-        oldestMessageTimestamp = Infinity;
-        area.innerHTML = "";
-        showFullMailmasterLoader(); // 🔥 İŞTE BURADA BÜYÜK EKRANI PATLATIYORUZ!
-    }
+// 2. ORİJİNAL, LİMİTSİZ, SIFIR HATA MESAJ YÜKLEME MOTORU
+function loadMessages() {
+    if(currentRoomRef) currentRoomRef.off(); 
+    const area = document.getElementById('messagesArea'); 
+    area.innerHTML = ""; 
 
-    currentRoomRef = database.ref("rooms/" + currentRoom);
-    const queryRef = currentRoomRef.limitToLast(currentMessageLimit);
+    // Odaya tıklandığı an büyük mükemmel ekranı patlat!
+    showFullMailmasterLoader();
 
-    // Orijinal kodun scroll'u aşağı fırlatmasını geçici engelleme
-    const originalScrollTop = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTop');
-    if (isLoadMore) {
-        Object.defineProperty(area, 'scrollTop', {
-            set: function(val) {},
-            get: originalScrollTop.get,
-            configurable: true
-        });
-    }
+    // Hiçbir 50 limiti yok, saf ve temiz orijinal bağlantı
+    currentRoomRef = database.ref("rooms/" + currentRoom); 
 
-    queryRef.once("value").then(snapshot => {
-        let messages = [];
-        snapshot.forEach(child => { messages.push({ key: child.key, val: child.val() }); });
+    // Mesajlar veritabanından başarıyla geldiği an yükleme ekranını yavaşça kapat
+    currentRoomRef.once("value").then(() => {
+        hideFullMailmasterLoader();
+    });
 
-        if (isLoadMore) {
-            area.innerHTML = ""; 
-            loadedMessageKeys.clear();
-        } else {
-            hideFullMailmasterLoader(); // 🔥 MESAJLAR GELDİ, BÜYÜK EKRANI KAPAT!
-        }
-
-        messages.forEach(msg => {
-            if (!loadedMessageKeys.has(msg.key)) {
-                loadedMessageKeys.add(msg.key);
-                if (msg.val.timestamp < oldestMessageTimestamp) oldestMessageTimestamp = msg.val.timestamp;
-                renderMessage(msg.key, msg.val);
-            }
-        });
-
-        if (isLoadMore) {
-            Object.defineProperty(area, 'scrollTop', originalScrollTop); 
-            area.scrollTop = area.scrollHeight - oldScrollHeight; 
-            setTimeout(() => { isLoadingMore = false; }, 100);
-        } else {
-            area.scrollTop = area.scrollHeight;
-        }
-
-        // Canlı Dinleyiciler
-        queryRef.on("child_added", s => {
-            const d = s.val();
-            if(d && !loadedMessageKeys.has(s.key)) {
-                
-                // Mesaj silindiğinde en alta düşen "hayalet" mesaj filtresi
-                if (d.timestamp < oldestMessageTimestamp && loadedMessageKeys.size >= 49) return; 
-
-                loadedMessageKeys.add(s.key);
-                renderMessage(s.key, d);
-
-                if(d.sender !== currentUser && d.status !== 'read') {
-                    currentRoomRef.child(s.key).update({ status: 'read' });
-                    if (d.timestamp > pageLoadTime) {
-                        if (document.hidden) {
-                            let notifText = d.text ? decryptMessageText(d.text) : (d.imageUrl ? "📷 Fotoğraf/GIF" : "📁 Dosya/Ses");
-                            showDesktopNotification(d.sender, notifText);
-                        }
-                        playNotificationSound();
+    // Senin orijinal, kusursuz çalışan ekleme fonksiyonun
+    currentRoomRef.on("child_added", s => { 
+        const d = s.val(); 
+        if(d) { 
+            renderMessage(s.key, d); 
+            if(d.sender !== currentUser && d.status !== 'read') {
+                currentRoomRef.child(s.key).update({ status: 'read' });
+                if (d.timestamp > pageLoadTime) {
+                    if (document.hidden) { 
+                        let notifText = d.text ? decryptMessageText(d.text) : (d.imageUrl ? "📷 Fotoğraf/GIF" : "📁 Dosya/Ses"); 
+                        showDesktopNotification(d.sender, notifText); 
                     }
+                    playNotificationSound();
                 }
-            }
-        });
+            } 
+        } 
+    });
 
-        queryRef.on("child_changed", s => {
-            const d = s.val(), msgRow = document.getElementById("msg-row-" + s.key);
-            if(msgRow) {
-                if(d.sender === currentUser && d.status === 'read') {
-                    const tick = msgRow.querySelector('.msg-ticks');
-                    if(tick) tick.style.color = '#53bdeb';
-                }
-                updateReactionsDisplay(s.key, d.reactions);
-            }
-        });
+    // Durum güncellemeleri
+    currentRoomRef.on("child_changed", s => { 
+        const d = s.val(), msgRow = document.getElementById("msg-row-" + s.key); 
+        if(msgRow) { 
+            if(d.sender === currentUser && d.status === 'read') { 
+                const tick = msgRow.querySelector('.msg-ticks'); 
+                if(tick) tick.style.color = '#53bdeb'; 
+            } 
+            updateReactionsDisplay(s.key, d.reactions); 
+        } 
+    });
 
-        queryRef.on("child_removed", s => {
-            const r = document.getElementById("msg-row-" + s.key);
-            if(r) {
-                r.remove();
-                loadedMessageKeys.delete(s.key);
-            }
-        });
+    // Mesaj silme (Artık alta zıplayan eski mesaj hatası YOK!)
+    currentRoomRef.on("child_removed", s => { 
+        const r = document.getElementById("msg-row-" + s.key); 
+        if(r) r.remove(); 
     });
 }
-
-// =========================================================================
-// 🔄 EN YUKARIYA GELİNDİĞİNDE TETİKLENEN SCROLL DİNLEYİCİSİ
-// =========================================================================
-document.getElementById('messagesArea').addEventListener('scroll', function() {
-    if (this.scrollTop <= 5 && !isLoadingMore) {
-        if (this.children.length >= currentMessageLimit) {
-            isLoadingMore = true;
-            const oldHeight = this.scrollHeight; 
-            currentMessageLimit += 50; 
-            loadMessages(true, oldHeight);
-        }
-    }
-});
 
         function renderMessage(id, data) {
             const isMe = (data.sender === currentUser); const time = new Date(data.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute:'2-digit' });
