@@ -1315,6 +1315,328 @@ setTimeout(() => {
     });
     console.log("🚀 Kusursuz Scroll Sistemi Aktif Edildi!");
 }, 400);
+// =========================================================================
+// ⚡ TEMA KORUMALI, BOŞ HAYALET ENGELLEYİCİ NİHAİ FİLTRE SİSTEMİ
+// =========================================================================
+(function() {
+    // 1. TEMA VE SİMGE PARLAMA ÖNLEYİCİ (DOKUNULMAZ ORİJİNAL)
+    function fixFlickerImmediately() {
+        const savedTheme = localStorage.getItem('theme');
+        const nativeThemeBtn = document.getElementById('themeBtn');
+        if (savedTheme === 'light') {
+            document.body.classList.add('light-theme');
+            document.documentElement.classList.add('light-theme');
+            if (nativeThemeBtn) nativeThemeBtn.textContent = '🌙';
+        } else {
+            document.body.classList.remove('light-theme');
+            document.documentElement.classList.remove('light-theme');
+            if (nativeThemeBtn) nativeThemeBtn.textContent = '☀️';
+        }
+        updateModalThemeBtnText();
+    }
+    fixFlickerImmediately();
+    document.addEventListener("DOMContentLoaded", fixFlickerImmediately);
+
+    let currentBoundUser = null;
+    let cloudThemeRef = null;
+    let cloudHiddenDmsRef = null;
+
+    // Dinamik Tema Buton Metni Ayarlayıcı
+    function updateModalThemeBtnText() {
+        const mmThemeBtn = document.getElementById('mmThemeBtn');
+        if (mmThemeBtn) {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                mmThemeBtn.innerHTML = '🌙 Açık Tema';
+            } else {
+                mmThemeBtn.innerHTML = '☀️ Koyu Tema';
+            }
+        }
+    }
+
+    // DİNAMİK STİLLER
+    if (!document.getElementById('mm-dynamic-styles')) {
+        const style = document.createElement('style');
+        style.id = 'mm-dynamic-styles';
+        style.innerHTML = `
+            .mm-settings-btn { position: fixed; bottom: 15px; left: 15px; z-index: 1000; font-size: 20px; background: none; border: none; cursor: pointer; transition: transform 0.2s; display: none; }
+            .mm-settings-btn:hover { transform: rotate(45deg); }
+            .mm-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10001; align-items: center; justify-content: center; font-family: sans-serif; backdrop-filter: blur(2px); }
+            .mm-modal-content { background: var(--panel-bg, #fff); color: var(--text-main, #333); padding: 20px; border-radius: 12px; width: 90%; max-width: 350px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); position: relative; border: 1px solid rgba(134,150,160,0.2); }
+            .mm-modal-close { position: absolute; top: 10px; right: 15px; font-size: 20px; cursor: pointer; color: var(--text-muted); }
+            .mm-setting-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(134,150,160,0.1); }
+            .mm-btn { padding: 8px 12px; border: none; border-radius: 6px; cursor: pointer; color: white; font-weight: bold; font-size: 13px; transition: 0.2s; min-width: 120px; text-align: center; }
+            .mm-btn:hover { opacity: 0.8; transform: scale(1.05); }
+            .mm-trash-btn {
+                position: absolute !important; right: 10px !important; top: 50% !important; transform: translateY(-50%) !important;
+                background: transparent !important; border: 1px solid transparent !important; border-radius: 6px !important;
+                padding: 5px 7px !important; cursor: pointer !important; z-index: 99999 !important; font-size: 14px !important;
+                transition: all 0.2s ease !important; opacity: 0.6;
+            }
+            .mm-trash-btn:hover { border: 1px solid red !important; background: rgba(220, 38, 38, 0.1) !important; opacity: 1; }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Odaya İsmiyle Güvenli Odaklanma Sağlayan Fonksiyon
+    function clickOnRoomByName(targetName) {
+        if (!targetName) return;
+        const cleanTarget = targetName.trim().toLowerCase();
+        setTimeout(() => {
+            const items = document.querySelectorAll('#dmList .room-item');
+            for (let i = 0; i < items.length; i++) {
+                const h4 = items[i].querySelector('h4');
+                if (h4 && h4.innerText.trim().toLowerCase() === cleanTarget) {
+                    items[i].click(); 
+                    break;
+                }
+            }
+        }, 50);
+    }
+
+    // 🚀 ULTRA-HIZLI GÜVENLİ FİLTRE MOTORU (10ms)
+    setInterval(() => {
+        const isUserLoggedIn = (typeof currentUser !== 'undefined' && currentUser);
+        const dmListEl = document.getElementById('dmList');
+        const authModal = document.getElementById('authModal');
+        const isAuthVisible = authModal && (authModal.style.display === 'flex' || authModal.style.display === 'block');
+
+        if (!isUserLoggedIn || isAuthVisible || !dmListEl) {
+            hideSystem();
+            return;
+        }
+
+        if (currentBoundUser !== currentUser) {
+            setupSystemForUser(currentUser, dmListEl);
+        } else {
+            const btn = document.getElementById('mmSettingsBtn');
+            if (btn) btn.style.display = 'block';
+            bindNativeThemeButton(); 
+            applyTrashAndFilterEngine(dmListEl, currentUser);
+        }
+    }, 10);
+
+    function hideSystem() {
+        const btn = document.getElementById('mmSettingsBtn');
+        const modal = document.getElementById('mmModal');
+        if (btn) btn.style.display = 'none';
+        if (modal) modal.style.display = 'none';
+        if (cloudThemeRef) { cloudThemeRef.off(); cloudThemeRef = null; }
+        if (cloudHiddenDmsRef) { cloudHiddenDmsRef.off(); cloudHiddenDmsRef = null; }
+        currentBoundUser = null;
+    }
+
+    function toggleTheme() {
+        const next = localStorage.getItem('theme') === 'light' ? 'dark' : 'light';
+        localStorage.setItem('theme', next);
+        fixFlickerImmediately(); 
+        if (cloudThemeRef) cloudThemeRef.set(next);
+    }
+
+    function bindNativeThemeButton() {
+        const nativeThemeBtn = document.getElementById('themeBtn');
+        if (nativeThemeBtn && !nativeThemeBtn.dataset.boundByMm) {
+            nativeThemeBtn.dataset.boundByMm = "true";
+            const newBtn = nativeThemeBtn.cloneNode(true);
+            nativeThemeBtn.parentNode.replaceChild(newBtn, nativeThemeBtn);
+            newBtn.addEventListener('click', (e) => {
+                e.preventDefault(); e.stopPropagation();
+                toggleTheme();
+            });
+        }
+    }
+
+    function setupSystemForUser(user, dmListEl) {
+        hideSystem(); 
+        currentBoundUser = user;
+
+        cloudThemeRef = database.ref('users/' + user + '/theme_state');
+        cloudHiddenDmsRef = database.ref('users/' + user + '/hidden_rooms_list');
+
+        let settingsBtn = document.getElementById('mmSettingsBtn');
+        if (!settingsBtn) {
+            settingsBtn = document.createElement('button');
+            settingsBtn.id = 'mmSettingsBtn';
+            settingsBtn.className = 'mm-settings-btn';
+            settingsBtn.innerText = '⚙️';
+            document.body.appendChild(settingsBtn);
+        }
+        settingsBtn.style.display = 'block';
+
+        let modal = document.getElementById('mmModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'mmModal';
+            modal.className = 'mm-modal';
+            document.body.appendChild(modal);
+        }
+        modal.innerHTML = `
+            <div class="mm-modal-content">
+                <span class="mm-modal-close" id="mmModalClose">&times;</span>
+                <h3 style="margin-top:0; border-bottom: 2px solid #0284C7; padding-bottom:10px; margin-bottom:15px; color: var(--text-main);">⚙️ Gelişmiş Ayarlar</h3>
+                <div class="mm-setting-row"><span>Görünüm Teması</span><button id="mmThemeBtn" class="mm-btn" style="background: #0284C7;">...</button></div>
+                <div class="mm-setting-row"><span>Gizli Sohbetler</span><button id="mmResetDmsBtn" class="mm-btn" style="background: #10B981;">Tümünü Affet</button></div>
+                <div class="mm-setting-row"><span>Oturum</span><button id="mmLogoutBtn" class="mm-btn" style="background: #F59E0B;">🚪 Çıkış Yap</button></div>
+                <div class="mm-setting-row" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0;"><span style="color: #EF4444; font-weight:bold;">Tehlikeli Bölge</span><button id="mmDeleteAccBtn" class="mm-btn" style="background: #DC2626;">Hesabı Kapat</button></div>
+            </div>
+        `;
+
+        updateModalThemeBtnText();
+
+        settingsBtn.onclick = () => {
+            updateModalThemeBtnText();
+            modal.style.display = 'flex';
+        };
+        document.getElementById('mmModalClose').onclick = () => modal.style.display = 'none';
+
+        cloudThemeRef.once('value').then((snap) => {
+            const val = snap.val();
+            if (val && val !== localStorage.getItem('theme')) {
+                localStorage.setItem('theme', val);
+                fixFlickerImmediately();
+            }
+        });
+
+        document.getElementById('mmThemeBtn').onclick = () => toggleTheme();
+
+        document.getElementById('mmLogoutBtn').onclick = () => { 
+            if (confirm('Çıkış yapılsın mı?')) { localStorage.clear(); sessionStorage.clear(); window.location.reload(); } 
+        };
+
+        document.getElementById('mmDeleteAccBtn').onclick = () => {
+            if (confirm('🚨 Hesabınızı kalıcı olarak kapatmak istediğinize emin misiniz?')) {
+                database.ref('users/' + user).remove().then(() => { localStorage.clear(); sessionStorage.clear(); window.location.reload(); });
+            }
+        };
+
+        // 🎯 SİTENİN BOŞ HAYALET AÇMASINI BLOKE EDEN AKILLI İNPUT MOTORU
+        const searchInput = document.getElementById('userSearchInput');
+        if (searchInput) {
+            searchInput.onkeydown = (e) => {
+                if (e.key !== 'Enter') return; 
+
+                const query = searchInput.value.trim().toLowerCase();
+                
+                // 🛑 [BOŞ HAYALET ENGELLEYİCİ]: Eğer input bomboşsa veya "null" ise sitenin hayalet oda tetiklemesini anında felç et!
+                if (query === "" || query === "null") {
+                    e.preventDefault(); 
+                    e.stopPropagation();
+                    searchInput.value = "";
+                    return; 
+                }
+
+                let hiddenRooms = JSON.parse(localStorage.getItem('hidden_rooms_' + user) || '[]');
+                let initialCount = hiddenRooms.length;
+                let foundRoomName = null;
+
+                // Sadece bizim gizlediğimiz listeyi kontrol et
+                hiddenRooms = hiddenRooms.filter(room => {
+                    if (room && room.trim().toLowerCase() === query) {
+                        foundRoomName = room;
+                        return false; 
+                    }
+                    return true;
+                });
+                
+                // Eğer bizim gizlediğimiz bir odayı yazdıysa, onu listeden çıkarıp görünür yapıyoruz ve odaklanıyoruz
+                if (hiddenRooms.length < initialCount) {
+                    localStorage.setItem('hidden_rooms_' + user, JSON.stringify(hiddenRooms));
+                    
+                    if (cloudHiddenDmsRef) {
+                        cloudHiddenDmsRef.set(hiddenRooms).then(() => {
+                            clickOnRoomByName(foundRoomName);
+                        });
+                    } else {
+                        clickOnRoomByName(foundRoomName);
+                    }
+                }
+                
+                // İçi doluysa ve gizli listemizde yoksa sitenin kendi sistemi (oda bulma/açma) serbestçe çalışır.
+            };
+        }
+
+        cloudHiddenDmsRef.once('value').then((snap) => {
+            const rooms = snap.val() && Array.isArray(snap.val()) ? snap.val() : [];
+            const cleanRooms = rooms.filter(r => r && r.trim() !== "" && r.trim().toLowerCase() !== "null");
+            localStorage.setItem('hidden_rooms_' + user, JSON.stringify(cleanRooms));
+        });
+
+        document.getElementById('mmResetDmsBtn').onclick = () => {
+            if (confirm('Tüm gizli sohbetleri affetmek istiyor musunuz?')) {
+                localStorage.setItem('hidden_rooms_' + user, JSON.stringify([]));
+                if (cloudHiddenDmsRef) cloudHiddenDmsRef.set([]);
+                modal.style.display = 'none'; 
+            }
+        };
+    }
+
+    // 🚀 SIFIR REFRESH - GİZLEME ENGINE'I
+    function applyTrashAndFilterEngine(dmListEl, user) {
+        if (!dmListEl || currentBoundUser !== user) return;
+        
+        let rawHiddenRooms = JSON.parse(localStorage.getItem('hidden_rooms_' + user) || '[]');
+        let normalizedHiddenRooms = rawHiddenRooms.map(r => r ? r.trim().toLowerCase() : "");
+
+        const items = dmListEl.querySelectorAll('.room-item');
+
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            const h4 = item.querySelector('h4');
+            const roomNameRaw = h4 ? h4.innerText : "";
+            const roomNameClean = roomNameRaw.trim();
+            const roomNameLower = roomNameClean.toLowerCase();
+
+            if (normalizedHiddenRooms.includes(roomNameLower) || roomNameClean === "" || roomNameLower === "null") {
+                if (item.style.display !== 'none') {
+                    item.style.setProperty('display', 'none', 'important');
+                }
+                continue;
+            } else {
+                if (item.style.display === 'none') {
+                    item.style.removeProperty('display');
+                }
+            }
+
+            if (!item.querySelector('.mm-trash-btn')) {
+                const delBtn = document.createElement('span');
+                delBtn.className = 'mm-trash-btn';
+                delBtn.innerText = '🗑️';
+                
+                delBtn.onclick = function(e) {
+                    e.stopPropagation(); e.preventDefault();
+                    if (confirm(`"${roomNameClean || 'Adsız Sohbet'}" sohbetini gizlemek istediğinize emin misiniz?`)) {
+                        
+                        let currentHidden = JSON.parse(localStorage.getItem('hidden_rooms_' + user) || '[]');
+                        if (!currentHidden.includes(roomNameClean)) {
+                            currentHidden.push(roomNameClean);
+                            localStorage.setItem('hidden_rooms_' + user, JSON.stringify(currentHidden));
+                            
+                            try {
+                                const genelEl = document.querySelector(".room-item[onclick*='genel']");
+                                if (genelEl) genelEl.click();
+                            } catch(err) {}
+
+                            if (cloudHiddenDmsRef) {
+                                cloudHiddenDmsRef.set(currentHidden).then(() => {
+                                    item.style.setProperty('display', 'none', 'important');
+                                });
+                            } else {
+                                item.style.setProperty('display', 'none', 'important');
+                            }
+                        }
+                    }
+                };
+                item.style.setProperty('position', 'relative', 'important');
+                item.appendChild(delBtn);
+            }
+        }
+    }
+
+    window.addEventListener('click', (e) => { 
+        const modal = document.getElementById('mmModal');
+        if (e.target === modal) modal.style.display = 'none'; 
+    });
+})();
 </script>
 
 <div style="position: fixed; bottom: 5px; left: 10px; font-family: sans-serif; font-size: 10px; color: #94a3b8; opacity: 0.3; transition: opacity 0.2s ease; z-index: 10;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.3'">
