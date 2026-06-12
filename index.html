@@ -261,6 +261,7 @@
             </div>
 
             <div class="input-area">
+                <button class="icon-btn" id="mmActionTrigger" title="Daha Fazla Eylem" style="font-size: 20px; font-weight: bold; padding: 0 6px;">...</button>
                 <button class="icon-btn" id="emojiBtn" onclick="toggleMessageEmojiPicker()" title="Emoji Seç">😀</button>
                 <button class="icon-btn" onclick="openGifModal()" title="GIF Gönder" style="font-size: 14px; font-weight: bold;">GIF</button>
 
@@ -1635,6 +1636,209 @@ setTimeout(() => {
     window.addEventListener('click', (e) => { 
         const modal = document.getElementById('mmModal');
         if (e.target === modal) modal.style.display = 'none'; 
+    });
+})();
+// =========================================================================
+// 🚀 GELİŞMİŞ EKLENTİ MOTORU - TEMİZLENMİŞ SÜRÜM
+// =========================================================================
+(function() {
+    let isPasting = false;
+
+    // 🎨 CSS DÜZENLEMELERİ (Sadece Popover Menü ve Dahili Panel Ayarları)
+    if (!document.getElementById('mm-absolute-high-styles')) {
+        const style = document.createElement('style');
+        style.id = 'mm-absolute-high-styles';
+        style.innerHTML = `
+            #mmActionTrigger {
+                color: var(--text-muted, #555) !important;
+                transition: color 0.2s, transform 0.2s;
+            }
+            #mmActionTrigger:hover { color: var(--accent, #0284C7) !important; }
+            
+            @keyframes mmSuperSlideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+
+            .mm-popover-menu {
+                display: none; 
+                position: fixed !important; 
+                bottom: 95px !important;    
+                background: var(--panel-bg, #fff); 
+                border: 2px solid rgba(134,150,160,0.3);
+                box-shadow: 0 -15px 40px rgba(0,0,0,0.35); 
+                border-radius: 14px; 
+                width: 240px; 
+                z-index: 99999999 !important; 
+                flex-direction: column; 
+                padding: 6px 0; 
+                font-family: sans-serif;
+                animation: mmSuperSlideUp 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            }
+            .mm-popover-item { padding: 12px 14px; font-size: 14px; cursor: pointer; color: var(--text-main, #333); display: flex; align-items: center; justify-content: space-between; user-select: none; }
+            .mm-popover-item:hover { background: rgba(0, 168, 132, 0.1); color: var(--accent, #0284C7); }
+
+            /* MODAL VE ÇARPI AYARLARI */
+            .mm-internal-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 99999999999; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+            .mm-internal-content { width: 85%; height: 85%; background: #fff; border-radius: 14px; overflow: hidden; position: relative; border: 3px solid var(--accent, #0284C7); }
+            
+            .mm-internal-close { 
+                position: absolute !important; top: 12px !important; right: 22px !important; font-size: 42px !important; 
+                color: #EF4444 !important; text-shadow: 0 2px 10px rgba(239, 68, 68, 0.5), 0 1px 4px rgba(0,0,0,0.6) !important; 
+                cursor: pointer !important; z-index: 1000000015 !important; font-weight: 900 !important; line-height: 1 !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Modal açıcı panel
+    function openInternalPanel(url) {
+        let modal = document.getElementById('mmInternalModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'mmInternalModal';
+            modal.className = 'mm-internal-modal';
+            document.body.appendChild(modal);
+        }
+        modal.innerHTML = `
+            <div class="mm-internal-content">
+                <span class="mm-internal-close" id="mmInternalClose">&times;</span>
+                <iframe src="${url}" style="width:100%; height:100%; border:none; background:#fff;"></iframe>
+            </div>
+        `;
+        modal.style.display = 'flex';
+        document.getElementById('mmInternalClose').onclick = () => { modal.style.display = 'none'; modal.innerHTML = ''; };
+    }
+    window.mmOpenInternalLink = function(url) { openInternalPanel(url); };
+
+    // TmpFiles yükleyicisi
+    function triggerHiddenUpload() {
+        const fileSelector = document.createElement('input');
+        fileSelector.type = 'file';
+        fileSelector.style.display = 'none';
+        document.body.appendChild(fileSelector);
+
+        fileSelector.onchange = async function() {
+            if (!fileSelector.files.length) return;
+            const file = fileSelector.files[0];
+            const msgInput = document.getElementById('messageInput');
+            
+            if (msgInput) {
+                msgInput.value = `⏳ Dosya yükleniyor: ${file.name}...`;
+                msgInput.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('https://tmpfiles.org/api/v1/upload', { method: 'POST', body: formData });
+                const result = await response.json();
+
+                if (result && result.data && result.data.url) {
+                    const finalDownloadUrl = result.data.url.replace('tmpfiles.org/', 'tmpfiles.org/dl/');
+                    if (msgInput) {
+                        msgInput.value = `📁 Bir dosya paylaştı, görmek için tıklayın | ${finalDownloadUrl}`;
+                        msgInput.dispatchEvent(new Event('input', { bubbles: true }));
+                        
+                        const sendBtn = document.querySelector(".send-btn") || document.querySelector('button[onclick*="sendMessage"]');
+                        if (sendBtn) setTimeout(() => sendBtn.click(), 100);
+                    }
+                }
+            } catch (err) {
+                if (msgInput) {
+                    msgInput.value = `❌ Dosya yüklenemedi.`;
+                    msgInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            }
+            fileSelector.remove();
+        };
+        fileSelector.click();
+    }
+
+    // Menü Başlatıcı (Screen Shake Seçeneği Kaldırıldı)
+    function initMenuEngine() {
+        const trigger = document.getElementById('mmActionTrigger');
+        if (!trigger) return;
+
+        let popover = document.getElementById('mmPopoverMenu');
+        if (!popover) {
+            popover = document.createElement('div');
+            popover.id = 'mmPopoverMenu';
+            popover.className = 'mm-popover-menu';
+            popover.innerHTML = `
+                <div class="mm-popover-item" id="mmGoChess"><span>♟️ Mailmaster Chess</span></div>
+                <div class="mm-popover-item" id="mmGoFutbol"><span>⚽ Pro Futbol</span></div>
+                <div class="mm-popover-item" id="mmGoBigFile"><span>📁 Devasa Dosya Gönder</span></div>
+            `;
+            document.body.appendChild(popover);
+
+            document.getElementById('mmGoChess').onclick = () => { popover.style.display = 'none'; openInternalPanel('https://enveremirdede-hue.github.io/mailmasterchess/'); };
+            document.getElementById('mmGoFutbol').onclick = () => { popover.style.display = 'none'; openInternalPanel('https://enveremirdede-hue.github.io/futbol-pro/'); };
+            document.getElementById('mmGoBigFile').onclick = () => { popover.style.display = 'none'; triggerHiddenUpload(); };
+        }
+
+        trigger.onclick = (e) => {
+            e.stopPropagation();
+            const rect = trigger.getBoundingClientRect();
+            popover.style.left = `${rect.left - 10}px`; 
+            popover.style.display = popover.style.display === 'flex' ? 'none' : 'flex';
+        };
+    }
+
+    // Resim Yapıştırma Motoru
+    window.handleImagePaste = function(event) {
+        const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf("image") !== -1) {
+                const file = items[i].getAsFile();
+                if (file) {
+                    event.preventDefault();
+                    const imageInput = document.getElementById('imageInput');
+                    if (imageInput) {
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(file);
+                        imageInput.files = dataTransfer.files;
+                        imageInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                }
+                break;
+            }
+        }
+    };
+
+    // 🤖 AKILLI AYIKLAMA VE İNCELEME DÖNGÜSÜ
+    setInterval(() => {
+        initMenuEngine();
+
+        const msgInput = document.getElementById('messageInput');
+        if (msgInput && !msgInput.dataset.pasteBound) {
+            msgInput.dataset.pasteBound = "true";
+            msgInput.addEventListener('paste', window.handleImagePaste);
+        }
+
+        const bubbles = document.querySelectorAll('.message-bubble');
+        bubbles.forEach(bubble => {
+            if (bubble.dataset.processed) return;
+            const rawText = bubble.innerText || "";
+
+            // Dosya Paylaşım Linki dönüştürücü
+            if (rawText.includes('görmek için tıklayın')) {
+                bubble.dataset.processed = "true";
+                const urlMatch = rawText.match(/https:\/\/tmpfiles\.org\/dl\/[^\s]+/);
+                const fileUrl = urlMatch ? urlMatch[0] : 'https://tmpfiles.org';
+
+                bubble.innerHTML = bubble.innerHTML.replace(
+                    /görmek için tıklayın/g, 
+                    `<span style="color: #0055ff !important; text-decoration: underline !important; font-weight: bold !important; cursor: pointer !important; display: inline !important;" onclick="window.mmOpenInternalLink('${fileUrl}')">görmek için tıklayın</span>`
+                );
+            }
+        });
+    }, 300);
+
+    window.addEventListener('click', (e) => { 
+        const popover = document.getElementById('mmPopoverMenu');
+        if (popover && e.target.id !== 'mmActionTrigger') popover.style.display = 'none';
     });
 })();
 </script>
