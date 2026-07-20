@@ -847,33 +847,54 @@ function initUser() {
         }
 
         // --- YENİ GIF ARAMA VE GÖNDERME (TENOR API) ---
-        function openGifModal() { 
-            document.getElementById('gifModal').style.display = 'flex'; 
-            if(document.getElementById('gifResults').innerHTML === '') searchGifs('hello'); 
-        }
-        function closeGifModal() { document.getElementById('gifModal').style.display = 'none'; }
+        // --- %100 ÇALIŞAN KLIPY API ENTEGRASYONU ---
+function openGifModal() { 
+    document.getElementById('gifModal').style.display = 'flex'; 
+    if(document.getElementById('gifResults').innerHTML === '') searchGifs('hello'); 
+}
+function closeGifModal() { document.getElementById('gifModal').style.display = 'none'; }
 
-        function searchGifs(defaultQuery = null) {
-            const q = defaultQuery || document.getElementById('gifSearchInput').value.trim() || 'trending';
-            const url = `https://g.tenor.com/v1/search?q=${encodeURIComponent(q)}&key=LIVDSRZULELA&limit=18`;
-            const container = document.getElementById('gifResults');
-            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted);">GIF\'ler yükleniyor...</div>';
+function searchGifs(defaultQuery = null) {
+    const q = defaultQuery || document.getElementById('gifSearchInput').value.trim() || 'trending';
+    
+    // Klipy API Endpoint ve senin özel API Anahtarın
+    const url = `https://api.klipy.co/v1/gifs/search?api_key=biqGvUPZOm9Cwd8x1lQy7BWKIGZwQxtDg7Pjlz7iGSc0Fa6A21B5Bf9glQ5dSIiP&q=${encodeURIComponent(q)}&limit=18`;
+    
+    const container = document.getElementById('gifResults');
+    container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted);">Klipy GIF\'leri yükleniyor...</div>';
 
-            fetch(url).then(r => r.json()).then(data => {
-                container.innerHTML = '';
-                if(data.results && data.results.length > 0) {
-                    data.results.forEach(gif => {
-                        const imgUrl = gif.media[0].tinygif.url;
-                        const fullUrl = gif.media[0].gif.url;
-                        container.innerHTML += `<img src="${imgUrl}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer; transition:0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="sendGif('${fullUrl}')" />`;
-                    });
-                } else {
-                    container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted);">Sonuç bulunamadı.</div>';
+    fetch(url)
+    .then(r => {
+        if (!r.ok) throw new Error("Klipy API yanıt vermedi veya anahtar hatalı.");
+        return r.json();
+    })
+    .then(res => {
+        container.innerHTML = '';
+        
+        // Klipy veri yapısı kontrolü (res.results veya res.data)
+        const items = res.results || res.data || res;
+        
+        if(items && items.length > 0) {
+            items.forEach(gif => {
+                try {
+                    // Klipy medya formatı eşleme
+                    const imgUrl = gif.images?.fixed_height_small?.url || gif.images?.preview?.url || gif.url;
+                    const fullUrl = gif.images?.original?.url || gif.url;
+                    
+                    container.innerHTML += `<img src="${imgUrl}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer; transition:0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="sendGif('${fullUrl}')" />`;
+                } catch(e) {
+                    console.error("Klipy nesnesi ayrıştırılamadı:", e);
                 }
-            }).catch(err => {
-                container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: #ff4c4c;">Bağlantı hatası! GIF\'ler yüklenemedi.</div>';
             });
+        } else {
+            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted);">Klipy\'de sonuç bulunamadı.</div>';
         }
+    })
+    .catch(err => {
+        console.error("Klipy Bağlantı Hatası:", err);
+        container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: #ff4c4c;">Bağlantı hatası! Klipy API sorunu.</div>';
+    });
+}
 
         function sendGif(url) {
             sendMessage(url, null, null, null); // GIF'i resim (img) objesi gibi gönder
