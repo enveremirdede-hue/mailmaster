@@ -857,32 +857,37 @@ function closeGifModal() { document.getElementById('gifModal').style.display = '
 function searchGifs(defaultQuery = null) {
     const q = defaultQuery || document.getElementById('gifSearchInput').value.trim() || 'trending';
     
-    // Klipy'den aldığın güncel yüksek limitli API anahtarın
+    // Klipy API Anahtarın
     const apiKey = 'biqGvUPZOm9Cwd8x1lQy7BWKIGZwQxtDg7Pjlz7iGSc0Fa6A21B5Bf9glQ5dSIiP';
     
-    // Bağlantı hatasını önlemek için doğrudan global CDN ağ geçidi kullanılıyor
-    const url = `https://api.giphy.com/v1/gifs/search?api_key=${apiKey}&q=${encodeURIComponent(q)}&limit=18&rating=g`;
+    // Doğrudan Klipy'nin resmi arama endpoint'i
+    const url = `https://api.klipy.co/v1/search?api_key=${apiKey}&q=${encodeURIComponent(q)}&limit=18`;
     
     const container = document.getElementById('gifResults');
-    container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted);">GIF\'ler yükleniyor...</div>';
+    container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted);">Klipy\'den GIF\'ler yükleniyor...</div>';
 
+    // Doğrudan Klipy API'sine istek atıyoruz
     fetch(url)
     .then(r => {
-        if (!r.ok) throw new Error("API kimlik doğrulaması başarısız oldu.");
+        if (!r.ok) throw new Error("Klipy API yanıt vermedi veya anahtar geçersiz.");
         return r.json();
     })
     .then(res => {
         container.innerHTML = '';
-        if(res.data && res.data.length > 0) {
-            res.data.forEach(gif => {
+        
+        // Klipy'den dönen veri listesi
+        const items = res.data || res.results || res;
+        
+        if(items && items.length > 0) {
+            items.forEach(item => {
                 try {
-                    // Hızlı ve optimize yükleme için downsampled görsel, tam boyut için orijinal url
-                    const imgUrl = gif.images.fixed_height_downsampled.url;
-                    const fullUrl = gif.images.original.url;
+                    // Klipy medya adresleri
+                    const imgUrl = item.gif?.preview || item.preview || item.url;
+                    const fullUrl = item.gif?.url || item.url;
                     
                     container.innerHTML += `<img src="${imgUrl}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer; transition:0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="sendGif('${fullUrl}')" />`;
                 } catch(e) {
-                    console.error("Görsel ayrıştırılamadı:", e);
+                    console.error("Klipy nesnesi işlenemedi:", e);
                 }
             });
         } else {
@@ -890,8 +895,8 @@ function searchGifs(defaultQuery = null) {
         }
     })
     .catch(err => {
-        console.error("Bağlantı Hatası Detayı:", err);
-        container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: #ff4c4c;">Bağlantı hatası! API anahtarı veya ağ kısıtlaması mevcut.</div>';
+        console.error("Klipy Bağlantı Hatası:", err);
+        container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: #ff4c4c;">Klipy bağlantı hatası!</div>';
     });
 }
 
