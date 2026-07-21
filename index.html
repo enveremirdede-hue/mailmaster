@@ -855,65 +855,111 @@ function openGifModal() {
 function closeGifModal() { document.getElementById('gifModal').style.display = 'none'; }
 
 function searchGifs(defaultQuery = null) {
-    const q = defaultQuery || document.getElementById('gifSearchInput').value.trim() || 'trending';
+    // 1. Arama terimini al ve temizle
+    const searchInput = document.getElementById('gifSearchInput');
+    const q = (defaultQuery !== null ? defaultQuery : (searchInput ? searchInput.value : '')) .trim() || 'trending';
     
-    // Klipy API Anahtarın
+    // API Key & Endpoint
     const apiKey = 'biqGvUPZOm9Cwd8x1lQy7BWKIGZwQxtDg7Pjlz7iGSc0Fa6A21B5Bf9glQ5dSIiP';
-    const url = `https://api.klipy.com/v1/search?q=${encodeURIComponent(q)}&limit=18`;
-    
-    const container = document.getElementById('gifResults');
-    container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted);">Klipy\'den GIF\'ler yükleniyor...</div>';
+    const url = `https://api.klipy.co/v1/gifs/search?q=${encodeURIComponent(q)}&limit=18&api_key=${apiKey}`;
 
-    // Anahtarı hem Header (Başlık) hem de sorgu olarak destekleyecek şekilde gönderiyoruz
-    fetch(url, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'x-api-key': apiKey,
-            'Content-Type': 'application/json'
+    const container = document.getElementById('gifResults');
+    if (!container) {
+        console.error("Hata: 'gifResults' ID'li kapsayıcı sayfada bulunamadı!");
+        return;
+    }
+
+    // Yükleniyor durumu
+    container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Klipy\'den GIF\'ler yükleniyor...</div>';
+
+    fetch(url)
+    .then(async response => {
+        if (!response.ok) {
+            const errorText = await response.text().catch(() => '');
+            throw new Error(`HTTP ${response.status}: ${response.statusText} ${errorText ? '| ' + errorText : ''}`);
         }
-    })
-    .then(async r => {
-        if (!r.ok) {
-            const errBody = await r.text().catch(() => '');
-            throw new Error(`HTTP ${r.status}: ${r.statusText} | ${errBody}`);
-        }
-        return r.json();
+        return response.json();
     })
     .then(res => {
         container.innerHTML = '';
         
-        // Klipy API yanıtı ve CDN medya linkleri (static.klipy.com desteğiyle)
-        const items = res.data || res.results || res;
+        // Dönen nesne yapısını esnek şekilde yakala
+        const items = res.data || res.results || (Array.isArray(res) ? res : []);
         
-        if (Array.isArray(items) && items.length > 0) {
-            items.forEach(item => {
-                try {
-                    // Klipy static CDN URL yapıları
-                    const imgUrl = item.preview_url || item.gif?.preview || item.images?.preview?.url || item.url;
-                    const fullUrl = item.gif_url || item.gif?.url || item.images?.original?.url || item.url;
+        if (!Array.isArray(items) || items.length === 0) {
+            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Sonuç bulunamadı.</div>';
+            return;
+        }
+
+        // Performans için fragment kullanımı (Tek seferde DOM'a ekleme)
+        const fragment = document.createDocumentFragment();
+
+        items.forEach(item => {
+            try {
+                // Tüm olası GIF URL yollarını güvenle kontrol et
+                const imgUrl = 
+                    item.media?.gif?.url || 
+                    item.images?.preview?.url || 
+                    item.images?.fixed_height?.url || 
+                    item.preview_url || 
+                    item.url;
+
+                const fullUrl = 
+                    item.media?.gif?.url || 
+                    item.images?.original?.url || 
+                    item.gif_url || 
+                    item.url || 
+                    imgUrl;
+
+                if (imgUrl) {
+                    const img = document.createElement('img');
+                    img.src = imgUrl;
+                    img.loading = 'lazy';
+                    img.style.cssText = 'width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer; transition:transform 0.2s ease;';
                     
-                    if (imgUrl) {
-                        container.innerHTML += `<img src="${imgUrl}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer; transition:0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'" onclick="sendGif('${fullUrl}')" />`;
-                    }
-                } catch(e) {
-                    console.error("Klipy nesnesi işlenemedi:", e);
+                    // Hover efektleri
+                    img.onmouseover = () => img.style.transform = 'scale(1.05)';
+                    img.onmouseout = () => img.style.transform = 'scale(1)';
+                    
+                    // Güvenli Tıklama Olayı (XSS / String Hatalarına Karşı Korumalı)
+                    img.addEventListener('click', () => {
+                        if (typeof window.sendGif === 'function') {
+                            window.sendGif(fullUrl);
+                        } else {
+                            console.log("GIF seçildi:", fullUrl);
+                        }
+                    });
+
+                    // Yüklenemeyen kırık görselleri gizle
+                    img.onerror = () => {
+                        img.style.display = 'none';
+                    };
+
+                    fragment.appendChild(img);
                 }
-            });
+            } catch (e) {
+                console.warn("GIF ögesi işlenirken atlandı:", e);
+            }
+        });
+
+        // Görselleri sayfaya bas
+        if (fragment.children.length === 0) {
+            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Geçerli GIF bulunamadı.</div>';
         } else {
-            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted);">Sonuç bulunamadı.</div>';
+            container.appendChild(fragment);
         }
     })
     .catch(err => {
-        console.error("--- KLIPY DETAYLI HATA TANI BİLGİSİ ---");
-        console.error(err);
-        container.innerHTML = `<div style="grid-column: span 3; text-align: center; color: #ff4c4c;">
-            Klipy bağlantı hatası!<br>
-            <small style="color:var(--text-muted); font-size:11px;">Detaylar için F12 > Console sekmesine bakın.</small>
-        </div>`;
+        console.error("--- KLIPY HATA DETAYI ---", err);
+        container.innerHTML = `
+            <div style="grid-column: span 3; text-align: center; color: #ff4c4c; padding: 15px;">
+                Klipy bağlantı hatası!<br>
+                <small style="color: var(--text-muted, #888); font-size: 11px;">
+                    ${err.message || 'Detaylar için Console sekmesine bakın.'}
+                </small>
+            </div>`;
     });
 }
-
         function sendGif(url) {
             sendMessage(url, null, null, null); // GIF'i resim (img) objesi gibi gönder
             closeGifModal();
