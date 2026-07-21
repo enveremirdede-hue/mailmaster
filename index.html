@@ -859,33 +859,34 @@ function searchGifs(defaultQuery = null) {
     const q = (defaultQuery !== null ? defaultQuery : (searchInput ? searchInput.value : '')) .trim() || 'trending';
     
     const apiKey = 'biqGvUPZOm9Cwd8x1lQy7BWKIGZwQxtDg7Pjlz7iGSc0Fa6A21B5Bf9glQ5dSIiP';
-    const url = `https://api.klipy.co/v1/gifs/search?q=${encodeURIComponent(q)}&limit=18&api_key=${apiKey}`;
+    
+    // SENİN ORİJİNAL ENDPOINT'İN (.com ve /v1/search)
+    const url = `https://api.klipy.com/v1/search?q=${encodeURIComponent(q)}&limit=18`;
 
     const container = document.getElementById('gifResults');
     if (!container) return;
 
     container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Klipy\'den GIF\'ler yükleniyor...</div>';
 
-    fetch(url)
+    // SENİN ORİJİNAL HEADER YAPIN
+    fetch(url, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'x-api-key': apiKey,
+            'Accept': 'application/json'
+        }
+    })
     .then(async response => {
-        // 1. ADIM: Çökmemesi için önce düz metin olarak okuyoruz!
-        const rawText = await response.text();
+        const rawText = await response.text(); // Çökme koruması
         
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${rawText}`);
-        }
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!rawText || rawText.trim() === '') return { data: [] };
         
-        // 2. ADIM: Eğer sunucu boş yanıt verdiyse güvenli bir şekilde boş dizi dönüyoruz.
-        if (!rawText || rawText.trim() === '') {
-            console.warn("Klipy sunucusu tamamen boş yanıt döndürdü.");
-            return { data: [] };
-        }
-
-        // 3. ADIM: Metin boş değilse, JSON'a çevir. (Hatalıysa yakala)
         try {
             return JSON.parse(rawText);
         } catch (e) {
-            throw new Error("Sunucudan gelen yanıt geçerli bir JSON değil!");
+            return { data: [] };
         }
     })
     .then(res => {
@@ -893,57 +894,47 @@ function searchGifs(defaultQuery = null) {
         const items = res.data || res.results || (Array.isArray(res) ? res : []);
         
         if (!Array.isArray(items) || items.length === 0) {
-            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Sonuç bulunamadı.</div>';
+            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Sonuç bulunamadı (API boş veri döndürdü).</div>';
             return;
         }
 
         const fragment = document.createDocumentFragment();
 
         items.forEach(item => {
-            try {
-                const imgUrl = item.media?.gif?.url || item.images?.preview?.url || item.images?.fixed_height?.url || item.preview_url || item.url;
-                const fullUrl = item.media?.gif?.url || item.images?.original?.url || item.gif_url || item.url || imgUrl;
+            const imgUrl = item.preview_url || item.gif?.preview || item.images?.preview?.url || item.url;
+            const fullUrl = item.gif_url || item.gif?.url || item.images?.original?.url || item.url || imgUrl;
 
-                if (imgUrl) {
-                    const img = document.createElement('img');
-                    img.src = imgUrl;
-                    img.loading = 'lazy';
-                    img.style.cssText = 'width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer; transition:transform 0.2s ease;';
-                    
-                    img.onmouseover = () => img.style.transform = 'scale(1.05)';
-                    img.onmouseout = () => img.style.transform = 'scale(1)';
-                    
-                    img.addEventListener('click', () => {
-                        if (typeof window.sendGif === 'function') {
-                            window.sendGif(fullUrl);
-                        } else {
-                            console.log("GIF seçildi:", fullUrl);
-                        }
-                    });
+            if (imgUrl) {
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                img.loading = 'lazy';
+                img.style.cssText = 'width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer; transition:transform 0.2s ease;';
+                
+                img.onmouseover = () => img.style.transform = 'scale(1.05)';
+                img.onmouseout = () => img.style.transform = 'scale(1)';
+                
+                img.addEventListener('click', () => {
+                    if (typeof window.sendGif === 'function') {
+                        window.sendGif(fullUrl);
+                    } else {
+                        console.log("GIF seçildi:", fullUrl);
+                    }
+                });
 
-                    img.onerror = () => { img.style.display = 'none'; };
-                    fragment.appendChild(img);
-                }
-            } catch (e) {
-                console.warn("GIF atlandı:", e);
+                img.onerror = () => { img.style.display = 'none'; };
+                fragment.appendChild(img);
             }
         });
 
-        if (fragment.children.length === 0) {
-            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Geçerli GIF bulunamadı.</div>';
-        } else {
+        if (fragment.children.length > 0) {
             container.appendChild(fragment);
+        } else {
+            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Geçerli görsel bulunamadı.</div>';
         }
     })
     .catch(err => {
         console.error("--- KLIPY HATA DETAYI ---", err);
-        container.innerHTML = `
-            <div style="grid-column: span 3; text-align: center; color: #ff4c4c; padding: 15px;">
-                Klipy bağlantı hatası!<br>
-                <small style="color: var(--text-muted, #888); font-size: 11px;">
-                    ${err.message}
-                </small>
-            </div>`;
+        container.innerHTML = `<div style="grid-column: span 3; text-align: center; color: #ff4c4c; padding: 15px;">Bağlantı hatası veya yetkisiz erişim.</div>`;
     });
 }
         function sendGif(url) {
