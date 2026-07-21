@@ -855,20 +855,34 @@ function openGifModal() {
 function closeGifModal() { document.getElementById('gifModal').style.display = 'none'; }
 
 function searchGifs(defaultQuery = null) {
+    // ==========================================
+    // 1. ARAMA TERİMİ VE API AYARLARI
+    // ==========================================
     const searchInput = document.getElementById('gifSearchInput');
     const q = (defaultQuery !== null ? defaultQuery : (searchInput ? searchInput.value : '')) .trim() || 'trending';
     
     const apiKey = 'biqGvUPZOm9Cwd8x1lQy7BWKIGZwQxtDg7Pjlz7iGSc0Fa6A21B5Bf9glQ5dSIiP';
-    
-    // SENİN ORİJİNAL ENDPOINT'İN (.com ve /v1/search)
     const url = `https://api.klipy.com/v1/search?q=${encodeURIComponent(q)}&limit=18`;
 
+    // 📌 KLASÖR YOK: Sadece dosya adı. HTML dosyanla aynı yerde arayacak.
+    const watermarkPath = 'klipy-logo.svg';
+
+    // ==========================================
+    // 2. KAPSAYICI (CONTAINER) KONTROLÜ
+    // ==========================================
     const container = document.getElementById('gifResults');
-    if (!container) return;
+    if (!container) {
+        // Eğer HTML'de div yoksa zaten ekrana basamayız, mecburen konsola atıyoruz.
+        console.error("KRİTİK HATA: 'gifResults' ID'sine sahip alan bulunamadı!");
+        return;
+    }
 
-    container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Klipy\'den GIF\'ler yükleniyor...</div>';
+    // İstek atılırken ekranda görünecek yükleniyor mesajı
+    container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Klipy\'den veriler çekiliyor...</div>';
 
-    // SENİN ORİJİNAL HEADER YAPIN
+    // ==========================================
+    // 3. API İSTEĞİ (FETCH) VE ÇÖKME KORUMASI
+    // ==========================================
     fetch(url, {
         method: 'GET',
         headers: {
@@ -878,63 +892,129 @@ function searchGifs(defaultQuery = null) {
         }
     })
     .then(async response => {
-        const rawText = await response.text(); // Çökme koruması
+        // Yanıtı doğrudan JSON yapmak yerine, çökmesin diye önce 'Düz Metin' olarak okuyoruz.
+        const rawText = await response.text(); 
         
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        if (!rawText || rawText.trim() === '') return { data: [] };
+        // Eğer HTTP durumu 200 (OK) değilse, Klipy'nin bize attığı hatayı (rawText) fırlat!
+        if (!response.ok) {
+            throw new Error(`HTTP Hatası!\nDurum: ${response.status} ${response.statusText}\nSunucunun Gönderdiği Yanıt: ${rawText}`);
+        }
         
-        try {
-            return JSON.parse(rawText);
-        } catch (e) {
-            return { data: [] };
+        // Sunucu 200 (Başarılı) dese bile içeriği bomboş göndermiş olabilir (Kota dolumu)
+        if (!rawText || rawText.trim() === '') {
+            return { data: [] }; // Boş dizi döndür ki aşağıdaki kod "Sonuç bulunamadı" desin.
+        }
+        
+        // Metin boş değilse JSON'a çevirmeyi dene. Bozuksa hatayı aşağıya fırlat.
+        try { 
+            return JSON.parse(rawText); 
+        } catch (e) { 
+            throw new Error(`JSON Dönüştürme Hatası!\nGeleni JSON sanıyorduk ama değilmiş.\nGelen Ham Veri: ${rawText}\nSistem Hatası: ${e.message}`);
         }
     })
     .then(res => {
-        container.innerHTML = '';
+        // ==========================================
+        // 4. VERİLERİ EKRANA (DOM) BASMA İŞLEMİ
+        // ==========================================
+        container.innerHTML = ''; // Yükleniyor yazısını sil
+        
+        // Klipy bazen veriyi 'res.data', bazen 'res.results' içinde yollar. Hepsine hazırlıklıyız.
         const items = res.data || res.results || (Array.isArray(res) ? res : []);
         
+        // Veri boşsa (Örn: Limit dolduysa veya aranılan kelimede GIF yoksa)
         if (!Array.isArray(items) || items.length === 0) {
-            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Sonuç bulunamadı (API boş veri döndürdü).</div>';
+            container.innerHTML = `
+                <div style="grid-column: span 3; text-align: center; padding: 20px; border: 1px dashed #666; border-radius: 8px;">
+                    <span style="color: #ff9800; font-weight: bold;">Sonuç Bulunamadı</span><br>
+                    <small style="color: var(--text-muted, #888);">Aradığınız kelimeye ait görsel yok veya saatlik 100 API limitinizi doldurdunuz.</small>
+                </div>`;
             return;
         }
 
+        // DOM'u yormamak için tüm elemanları bellekte toplayacağımız sanal bir kutu (fragment)
         const fragment = document.createDocumentFragment();
 
-        items.forEach(item => {
+        items.forEach((item, index) => {
+            // GIF url'lerini güvenli şekilde tespit et
             const imgUrl = item.preview_url || item.gif?.preview || item.images?.preview?.url || item.url;
             const fullUrl = item.gif_url || item.gif?.url || item.images?.original?.url || item.url || imgUrl;
 
             if (imgUrl) {
-                const img = document.createElement('img');
-                img.src = imgUrl;
-                img.loading = 'lazy';
-                img.style.cssText = 'width:100%; height:120px; object-fit:cover; border-radius:8px; cursor:pointer; transition:transform 0.2s ease;';
+                // --- A) DIŞ KUTU (Sarmalayıcı) ---
+                const wrapper = document.createElement('div');
+                wrapper.style.cssText = 'position: relative; width: 100%; height: 120px; border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s ease; background-color: #222;';
                 
-                img.onmouseover = () => img.style.transform = 'scale(1.05)';
-                img.onmouseout = () => img.style.transform = 'scale(1)';
+                // Hover efektleri
+                wrapper.onmouseover = () => wrapper.style.transform = 'scale(1.05)';
+                wrapper.onmouseout = () => wrapper.style.transform = 'scale(1)';
                 
-                img.addEventListener('click', () => {
+                // Tıklanınca çalışacak güvenli fonksiyon
+                wrapper.addEventListener('click', () => {
                     if (typeof window.sendGif === 'function') {
                         window.sendGif(fullUrl);
-                    } else {
-                        console.log("GIF seçildi:", fullUrl);
                     }
                 });
 
-                img.onerror = () => { img.style.display = 'none'; };
-                fragment.appendChild(img);
+                // --- B) GIF GÖRSELİNİN KENDİSİ ---
+                const img = document.createElement('img');
+                img.src = imgUrl;
+                img.loading = 'lazy'; // Performans için kaydırdıkça yükle
+                img.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+                
+                // GIF resmi bozuksa/silinmişse komple sarmalayıcı kutuyu gizle
+                img.onerror = () => { wrapper.style.display = 'none'; };
+
+                // --- C) KLIPY LOGOSU (SVG) ---
+                const watermark = document.createElement('img');
+                watermark.src = watermarkPath;
+                watermark.alt = 'KLIPY';
+                watermark.style.cssText = 'position: absolute; bottom: 6px; left: 6px; height: 14px; width: auto; opacity: 0.9; pointer-events: none; z-index: 10;';
+                
+                // Eğer sen klipy-logo.svg'yi oluşturmayı unutursan çirkin kırık ikon görünmesin diye gizle.
+                watermark.onerror = () => { 
+                    watermark.style.display = 'none'; 
+                    console.error(`SVG BULUNAMADI! Lütfen 'klipy-logo.svg' dosyasının index.html ile aynı yerde olduğuna emin olun.`);
+                };
+
+                // Hepsini kutuya ekle
+                wrapper.appendChild(img);
+                wrapper.appendChild(watermark);
+                fragment.appendChild(wrapper);
             }
         });
 
+        // Toparlanan tüm GIF'leri tek seferde ekrana bas
         if (fragment.children.length > 0) {
             container.appendChild(fragment);
         } else {
-            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Geçerli görsel bulunamadı.</div>';
+            container.innerHTML = '<div style="grid-column: span 3; text-align: center; color: var(--text-muted, #888); padding: 20px;">Görüntülenebilir formatta görsel bulunamadı.</div>';
         }
     })
     .catch(err => {
-        console.error("--- KLIPY HATA DETAYI ---", err);
-        container.innerHTML = `<div style="grid-column: span 3; text-align: center; color: #ff4c4c; padding: 15px;">Bağlantı hatası veya yetkisiz erişim.</div>`;
+        // ==========================================
+        // 5. TÜM HATAYI EKRANA YANSITMA (DEBUG MODU)
+        // ==========================================
+        console.error("--- KLIPY HATA LOGU ---", err);
+        
+        // Hatanın ana mesajı
+        const errorMessage = err.message || "Bilinmeyen bir bağlantı hatası oluştu.";
+        // Hatanın satır satır nereden koptuğunu gösteren döküm (Stack Trace)
+        const errorStack = err.stack ? err.stack.replace(/\n/g, '<br>') : "Hata izi (stack trace) bulunamadı.";
+
+        // Ekranda kıpkırmızı ve çok net bir hata kutusu oluşturuyoruz
+        container.innerHTML = `
+            <div style="grid-column: span 3; background-color: #2b0b0b; border: 1px solid #ff4c4c; padding: 15px; border-radius: 8px; text-align: left; overflow: hidden;">
+                <h4 style="color: #ff4c4c; margin: 0 0 8px 0; font-family: sans-serif;">🚨 Klipy İşleminde Hata Oluştu!</h4>
+                <p style="color: #ffb3b3; font-size: 13px; margin: 0 0 12px 0; font-family: monospace;">
+                    <strong>Hata Mesajı:</strong><br> ${errorMessage}
+                </p>
+                <details style="cursor: pointer; color: #ff8080; font-size: 11px; font-family: sans-serif;">
+                    <summary style="outline: none;">Detaylı Sistem Loglarını Göster</summary>
+                    <div style="margin-top: 10px; padding: 10px; background: rgba(0,0,0,0.4); border-radius: 4px; font-family: monospace; overflow-x: auto; white-space: pre-wrap;">
+                        ${errorStack}
+                    </div>
+                </details>
+            </div>`;
     });
 }
         function sendGif(url) {
