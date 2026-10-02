@@ -232,6 +232,7 @@
                     <div id="headerStatus" style="display:none; align-items:center; gap:5px; font-size:12px; color:var(--text-muted);">
                         <span id="headerStatusDot" style="width:10px; height:10px; border-radius:50%; background:#8696a0; display:inline-block; transition:0.3s;"></span>
                         <span id="headerStatusText">Yükleniyor...</span>
+                        <button id="dmLastSeenBtn" class="action-btn" style="width:20px; height:20px; font-size:10px; margin-left:3px; cursor:pointer;" title="Son Görülme Bilgisi">⋮</button>
                     </div>
                 </div>
             </div>
@@ -451,6 +452,7 @@ function initUser() {
             myUserRef.update({ state: 'online', last_changed: firebase.database.ServerValue.TIMESTAMP });
             document.getElementById('myPresenceText').innerText = "Çevrimiçi";
             document.getElementById('myPresenceText').style.color = "var(--accent)";
+            
         }
     });
 
@@ -467,6 +469,18 @@ function initUser() {
         }
     });
 }
+function formatLastSeen(timestamp) {
+    if (!timestamp) return "Tarih bilgisi yok";
+    const d = new Date(timestamp);
+    return d.toLocaleString('tr-TR', { 
+        day: 'numeric', 
+        month: 'long', 
+        weekday: 'long', 
+        hour: '2-digit', 
+        minute: '2-digit' 
+    });
+}
+
          // --- GELİŞTİRİLMİŞ ÇEVRİMİÇİ/ÇEVRİMDIŞI (PRESENCE) SİSTEMİ ---
 
         function initUser() {
@@ -677,6 +691,11 @@ function initUser() {
                 activeStatusRef = database.ref('users/' + title);
                 activeStatusRef.on('value', snap => {
                     const uData = snap.val();
+                    const lastSeenFormatted = formatLastSeen(uData?.last_changed);
+    const btn = document.getElementById('dmLastSeenBtn');
+    if (btn) {
+        btn.onclick = () => alert(`${title} kişisinin son çevrim içi olma zamanı:\n` + lastSeenFormatted);
+    }
                     if (uData && uData.state === 'online') {
                         document.getElementById('headerStatusDot').style.background = "#00a884";
                         document.getElementById('headerStatusDot').style.boxShadow = "0 0 6px #00a884";
@@ -770,18 +789,20 @@ function initUser() {
             const isAway = uData.state === 'away';
             const dotColor = isOnline ? '#00a884' : (isAway ? '#f0ad4e' : 'white');
             const statusTxt = isOnline ? 'Çevrimiçi' : (isAway ? 'Uzakta' : 'Çevrimdışı');
-
+            const lastSeenStr = formatLastSeen(uData?.last_changed);
+     
             list.innerHTML += `
-            <div id="user_row_${uName}" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(134,150,160,0.1); background: var(--chat-bg); margin-bottom: 5px; border-radius: 8px;">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <div style="width:35px; height:35px; border-radius:50%; background:linear-gradient(135deg, var(--accent), #007bb5); color:white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:14px; background-size:cover; background-position:center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);" id="member_av_${uName}">${uName.charAt(0).toUpperCase()}</div>
-                    <div style="font-weight:bold; font-size:15px; color:var(--text-main);">${uName} ${uName === currentUser ? '<span style="font-size:11px; color:var(--accent); font-weight:normal;">(Sen)</span>' : ''}</div>
-                </div>
-                <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); background: var(--sidebar-bg); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(134,150,160,0.1);">
-                    <span id="status_dot_${uName}" style="width:8px; height:8px; border-radius:50%; background:${dotColor}; ${isOnline ? 'box-shadow: 0 0 5px '+dotColor+';' : ''}"></span> 
-                    <span id="status_txt_${uName}">${statusTxt}</span>
-                </div>
-            </div>`;
+    <div id="user_row_${uName}" style="display:flex; align-items:center; justify-content:space-between; padding:12px; border-bottom:1px solid rgba(134,150,160,0.1); background: var(--chat-bg); margin-bottom: 5px; border-radius: 8px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+            <div style="width:35px; height:35px; border-radius:50%; background:linear-gradient(135deg, var(--accent), #007bb5); color:white; display:flex; justify-content:center; align-items:center; font-weight:bold; font-size:14px; background-size:cover; background-position:center; box-shadow: 0 2px 5px rgba(0,0,0,0.3);" id="member_av_${uName}">${uName.charAt(0).toUpperCase()}</div>
+            <div style="font-weight:bold; font-size:15px; color:var(--text-main);">${uName} ${uName === currentUser ? '<span style="font-size:11px; color:var(--accent); font-weight:normal;">(Sen)</span>' : ''}</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); background: var(--sidebar-bg); padding: 5px 10px; border-radius: 12px; border: 1px solid rgba(134,150,160,0.1);">
+            <span id="status_dot_${uName}" style="width:8px; height:8px; border-radius:50%; background:${dotColor}; ${isOnline ? 'box-shadow: 0 0 5px '+dotColor+';' : ''}"></span> 
+            <span id="status_txt_${uName}">${statusTxt}</span>
+            <button class="action-btn" style="width:22px; height:22px; font-size:11px; margin-left:4px; cursor:pointer;" title="Son Çevrim İçi Bilgisi" onclick="alert('${uName} kişisinin en son çevrim içi olduğu zaman:\\n${lastSeenStr}')">⋮</button>
+        </div>
+    </div>`;
 
             if(uData.profilePic) { 
                 setTimeout(() => { 
@@ -1112,7 +1133,12 @@ function loadMessages() {
             let safeText = mesajMetni ? mesajMetni.replace(/'/g, "\\'").replace(/"/g, "&quot;") : "";
             if (data.text === "[VIDEO_CALL_START_SIGNAL]") safeText = "Görüntülü Arama";
 
-            const actions = `<div class="msg-actions"><button class="action-btn" title="Tepki Ver" onclick="toggleEmojiPicker('${id}', this)">😀</button><button class="action-btn" title="Yanıtla" onclick="initiateReply('${id}', '${data.sender}', '${safeText}', ${hasMedia})">↩️</button>${isMe ? `<button class="action-btn del" onclick="deleteMessage('${id}')">🗑️</button>` : ''}</div>`;
+            const actions = `<div class="msg-actions">
+    <button class="action-btn" title="Tepki Ver" onclick="toggleEmojiPicker('${id}', this)">😀</button>
+    <button class="action-btn" title="Yanıtla" onclick="initiateReply('${id}', '${data.sender}', '${safeText}', ${hasMedia})">↩️</button>
+    ${isMe && data.text && data.text !== "[VIDEO_CALL_START_SIGNAL]" ? `<button class="action-btn" title="Düzenle" onclick="editMessage('${id}', '${safeText}')">✏️</button>` : ''}
+    ${isMe ? `<button class="action-btn del" title="Sil" onclick="deleteMessage('${id}')">🗑️</button>` : ''}
+</div>`;
 
             const row = document.createElement('div'); row.className = `message-row ${isMe ? 'sent' : 'received'}`; row.id = "msg-row-" + id; row.setAttribute('data-text', (mesajMetni || "").toLowerCase()); 
 
@@ -1941,6 +1967,23 @@ setTimeout(() => {
         if (popover && e.target.id !== 'mmActionTrigger') popover.style.display = 'none';
     });
 })();
+function editMessage(id, oldText) {
+    const newText = prompt("Mesajınızı düzenleyin:", oldText);
+    if (newText !== null && newText.trim() !== "") {
+        const encrypted = encryptMessageText(newText.trim());
+        currentRoomRef.child(id).update({
+            text: encrypted,
+            isEdited: true
+        }).then(() => {
+            // Görsel olarak mesajı anında güncelle
+            const row = document.getElementById("msg-row-" + id);
+            if (row) {
+                const textDiv = row.querySelector('.msg-text-content');
+                if (textDiv) textDiv.innerText = newText.trim();
+            }
+        });
+    }
+}
 </script>
 
 <div style="position: fixed; bottom: 5px; left: 10px; font-family: sans-serif; font-size: 10px; color: #94a3b8; opacity: 0.3; transition: opacity 0.2s ease; z-index: 10;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.3'">
