@@ -4,7 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
-    <link rel="manifest" href="/manifest.json?v=2">
+   <script>
+  // Sitenin o an çalıştığı alt klasör yolunu otomatik bulur
+  // GitHub'da '/mailmaster/', Vercel'de '/' sonucunu verir
+  const baseRepoPath = window.location.pathname.split('/')[1];
+  const isSubFolder = baseRepoPath && !baseRepoPath.includes('.') && baseRepoPath === 'mailmaster';
+  
+  const manifestPath = isSubFolder ? `/${baseRepoPath}/manifest.json?v=2` : '/manifest.json?v=2';
+  
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = manifestPath;
+  document.head.appendChild(link);
+</script>
     
     <link rel="icon" href="logo.png?v=2" type="image/png">
     <link rel="apple-touch-icon" href="/mailmaster/logo.png?v=2">
