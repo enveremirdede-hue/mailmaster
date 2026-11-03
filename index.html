@@ -5,18 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     
    <script>
-  // Sitenin o an çalıştığı alt klasör yolunu otomatik bulur
-  // GitHub'da '/mailmaster/', Vercel'de '/' sonucunu verir
-  const baseRepoPath = window.location.pathname.split('/')[1];
-  const isSubFolder = baseRepoPath && !baseRepoPath.includes('.') && baseRepoPath === 'mailmaster';
+  // Şu anki sayfa yolunu kontrol et
+  const currentPath = window.location.pathname;
   
-  const manifestPath = isSubFolder ? `/${baseRepoPath}/manifest.json?v=2` : '/manifest.json?v=2';
+  // Eğer linkte 'mailmaster' geçiyorsa GitHub Pages alt klasöründeyizdir
+  const isGitHubPages = currentPath.includes('/mailmaster');
   
-  const link = document.createElement('link');
-  link.rel = 'manifest';
-  link.href = manifestPath;
-  document.head.appendChild(link);
+  // Klasör yoluna göre manifest adresi belirle
+  const manifestUrl = isGitHubPages ? '/mailmaster/manifest.json?v=2' : '/manifest.json?v=2';
+  
+  // Manifest elementini dinamik olarak oluştur ve ekle
+  const linkElement = document.createElement('link');
+  linkElement.rel = 'manifest';
+  linkElement.href = manifestUrl;
+  document.head.appendChild(linkElement);
 </script>
+
     
     <link rel="icon" href="logo.png?v=2" type="image/png">
     <link rel="apple-touch-icon" href="/mailmaster/logo.png?v=2">
