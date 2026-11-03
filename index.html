@@ -372,17 +372,27 @@
         }
 
         async function requestNotificationPermission() {
-            if (!('serviceWorker' in navigator)) return;
-            try {
-                let registration = await navigator.serviceWorker.getRegistration('./');
-                if (!registration) registration = await navigator.serviceWorker.register('./firebase-messaging-sw.js');
-                const currentToken = await messaging.getToken({ 
-                    vapidKey: 'BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ',
-                    serviceWorkerRegistration: registration 
-                });
-                if (currentToken) database.ref('users/' + currentUser).update({ fcmToken: currentToken });
-            } catch (err) { console.error(err); }
+    if (!('serviceWorker' in navigator)) return;
+    try {
+        // './' yerine direkt ana dizini ('/') kontrol ediyoruz
+        let registration = await navigator.serviceWorker.getRegistration('/');
+        
+        // Eğer kayıt yoksa, ana dizindeki ('/firebase-messaging-sw.js') dosyayı kaydediyoruz
+        if (!registration) {
+            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
         }
+        
+        const currentToken = await messaging.getToken({ 
+            vapidKey: 'BOziFlLsnFzlyKyvy6wREcovGEIiCHEwBIIsrYLoYcxJ7hsUltt6fC3mjU00IdnGhm1DQZEacE3emXccT-2g4bQ',
+            serviceWorkerRegistration: registration 
+        });
+        
+        if (currentToken) database.ref('users/' + currentUser).update({ fcmToken: currentToken });
+    } catch (err) { 
+        console.error("Service Worker kayıt hatası:", err); 
+    }
+}
+
 
         let currentUser = localStorage.getItem('mailmaster_user');
         let currentRoom = 'genel';
