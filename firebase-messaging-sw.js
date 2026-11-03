@@ -1,45 +1,40 @@
-// GÜVENLİ CDN: Tırnak işaretlerinin içindeki tam URL'ler tarayıcının yönlendirme yapmasını engeller
-importScripts('https://gstatic.com');
-importScripts('https://gstatic.com');
-importScripts('https://gstatic.com');
+// ARTIK IMPORTSCRIPTS YOK! Tarayıcı güvenlik duvarına takılamaz.
 
-// Firebase Ayarların
-firebase.initializeApp({
-    apiKey: "AIzaSyA1bzy3VaZJwUwlhybNt6yrVzurQsrcqLw",
-    databaseURL: "https://firebaseio.com",
-    projectId: "mailmaster-62785",
-    messagingSenderId: "324963953782",
-    appId: "1:324963953782:web:a2baa1cf64db51798bc357"
-});
+// Arka planda bir push (bildirim) sinyali geldiğinde tetiklenen yerel fonksiyon
+self.addEventListener('push', function(event) {
+    console.log('Arka planda ham push sinyali alındı.');
 
-const messaging = firebase.messaging();
-const database = firebase.database();
+    let notificationTitle = 'Mailmaster Pro';
+    let notificationOptions = {
+        body: 'Yeni bir mesajın var!',
+        icon: 'https://flaticon.com',
+        requireInteraction: true
+    };
 
-// Arka plan mesaj dinleyicisi
-messaging.onBackgroundMessage(function(payload) {
-    console.log("Arka planda tetiklenme alındı: ", payload);
+    // Eğer gelen bildirim verisi (payload) varsa içeriği direkt oradan oku
+    if (event.data) {
+        try {
+            const data = event.data.json();
+            
+            // Eğer bildirim doğrudan backend/kod tarafından doldurulduysa
+            if (data.notification) {
+                notificationTitle = data.notification.title || notificationTitle;
+                notificationOptions.body = data.notification.body || notificationOptions.body;
+            } 
+            // Veya esnek data objesiyle geldiyse
+            else if (data.data) {
+                notificationTitle = data.data.sender || notificationTitle;
+                notificationOptions.body = data.data.message || notificationOptions.body;
+            }
+        } catch (e) {
+            // Eğer gelen veri JSON değilse düz metin olarak oku
+            notificationOptions.body = event.data.text();
+        }
+    }
 
-    // Veritabanına gidip en son düşen mesajı çekiyoruz
-    return database.ref('messages').limitToLast(1).once('value').then(snapshot => {
-        let notificationTitle = 'Mailmaster Pro';
-        let notificationBody = 'Yeni bir mesajın var!';
-
-        snapshot.forEach(childSnapshot => {
-            const messageData = childSnapshot.val();
-            // Veritabanındaki 'senderName' ve 'text' alanlarını ekrana basıyoruz
-            if (messageData.senderName) notificationTitle = messageData.senderName;
-            if (messageData.text) notificationBody = messageData.text;
-        });
-
-        const notificationOptions = {
-            body: notificationBody,
-            icon: 'https://flaticon.com',
-            requireInteraction: true 
-        };
-
-        return self.registration.showNotification(notificationTitle, notificationOptions);
-    }).catch(err => {
-        console.error("Veritabanından mesaj okuma hatası:", err);
-    });
+    // Bildirimi ekrana bas
+    event.waitUntil(
+        self.registration.showNotification(notificationTitle, notificationOptions)
+    );
 });
 
