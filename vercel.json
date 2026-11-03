@@ -1,0 +1,13 @@
+{
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/mailmaster/firebase-messaging-sw.js",
+      "destination": "/firebase-messaging-sw.js"
+    },
+    {
+      "source": "/mailmaster/manifest.json",
+      "destination": "/manifest.json"
+    }
+  ]
+}
