@@ -390,12 +390,25 @@
         async function requestNotificationPermission() {
     if (!('serviceWorker' in navigator)) return;
     try {
-        // './' yerine direkt ana dizini ('/') kontrol ediyoruz
-        let registration = await navigator.serviceWorker.getRegistration('/');
+        // Sitenin şu an GitHub alt klasöründe mi yoksa Vercel ana dizininde mi olduğunu dinamik buluyoruz
+        const pathPrefix = window.location.pathname.includes('/mailmaster') ? '/mailmaster' : '';
+        const targetScope = pathPrefix + '/';
+        const targetScript = pathPrefix + '/firebase-messaging-sw.js';
+
+        // Mevcut kaydı kontrol et
+        let registration = await navigator.serviceWorker.getRegistration(targetScope);
         
-        // Eğer kayıt yoksa, ana dizindeki ('/firebase-messaging-sw.js') dosyayı kaydediyoruz
+        // KRİTİK KONTROL: Eğer bir kayıt bulunduysa AMA o kayıt şu anki sitemizin adresini (domainini) içermiyorsa 
+        // veya yanlış scope'taysa eski kaydı zorla sildiriyoruz!
+        if (registration && (!registration.active || !registration.active.scriptURL.includes(window.location.host))) {
+            await registration.unregister();
+            registration = null; // Sıfırla ki aşağıdaki if bloğuna girip yenisini kaydetsin
+        }
+        
+        // Eğer kayıt yoksa (veya az önce sildiysek), bulunulan siteye uygun güncel dosyayı kaydediyoruz
         if (!registration) {
-            registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+            registration = await navigator.serviceWorker.register(targetScript, { scope: targetScope });
+            console.log("Service Worker bu domain için sıfırdan kaydedildi:", targetScript);
         }
         
         const currentToken = await messaging.getToken({ 
