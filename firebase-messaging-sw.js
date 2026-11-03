@@ -1,5 +1,5 @@
-importScripts('https://gstatic.com');
-importScripts('https://gstatic.com');
+importScripts('./firebase-app-compat.js');
+importScripts('./firebase-messaging-compat.js');
 
 // Firebase Ayarların
 firebase.initializeApp({
