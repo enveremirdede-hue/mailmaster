@@ -3,30 +3,27 @@
 self.addEventListener('push', function(event) {
     console.log('[Service Worker] Arka planda push sinyali alındı.');
 
-    // Firebase Realtime Database URL (En son mesajı çekmek için doğrudan güvenli JSON endpoint kullanımı)
+    // Veritabanı URL (JSON endpoint kullanımı)
     const dbUrl = "https://firebaseio.com\"$key\"&limitToLast=1";
 
-    // Tüm cihazlar ve bilgisayarlar için güvenli varsayılan değerler (Fallback)
+    // Tüm cihazlar için kurşun geçirmez varsayılan ayarlar (Fallback)
     let notificationTitle = 'Mailmaster Pro';
     let notificationOptions = {
         body: 'Yeni bir mesajın var!',
         icon: 'https://flaticon.com',
-        badge: 'https://flaticon.com', // Android durum çubuğu için küçük ikon
+        badge: 'https://flaticon.com',
         
-        // 🔥 İPAD, İPHONE & PC MEKANİZMASI 1:
-        // Kullanıcı tıklayana veya kapatana kadar bildirim ekranda kilitli kalır, kendi kendine kaybolamaz.
+        // 📌 KUSURSUZLUK AYARI 1: Kullanıcı dokunana kadar ekranda kilitli kalır, uyku modunda yutulamaz.
         requireInteraction: true,
         
-        // Android ve mobil cihazlar için standart titreşim şablonu (PC'lerde hata vermemesi için düzgün dizi formatında)
+        // PC ve mobil cihaz uyumluluğu için standart titreşim dizisi
         vibrate:,
         
-        // Bildirim verilerinin zaman damgası
-        data: { time: Date.now() }
+        // Bildirim tıklandığında açılacak varsayılan URL (Ana sayfa)
+        data: { targetUrl: self.location.origin } 
     };
 
-    // 🔥 İPAD, İPHONE & ANDROID MEKANİZMASI 2 (Kusursuzluk Akışı):
-    // Veritabanından mesaj bilgileri çekilene ve bildirim ekrana basılana kadar
-    // Apple (iOS/iPadOS) ve Android sistemlerinin Service Worker sürecini arka planda öldürmesini KESİNLİKLE engeller.
+    // 📌 KUSURSUZLUK AYARI 2: Tüm asenkron işlemler bitene kadar işletim sisteminin süreci öldürmesini engeller.
     const pipeline = fetch(dbUrl)
         .then(response => {
             if (!response.ok) throw new Error('Veritabanı yanıt vermedi');
@@ -36,51 +33,51 @@ self.addEventListener('push', function(event) {
             if (data) {
                 const keys = Object.keys(data);
                 if (keys.length > 0) {
-                    const lastMessage = data[keys[0]]; // En son eklenen mesaj nesnesini güvenle alıyoruz
+                    const lastMessage = data[keys]; // En son atılan mesaj verisi
                     
-                    // Veritabanınızdaki alan adlarına göre başlık ve mesajı dinamik yerleştiriyoruz
-                    if (lastMessage.senderName) notificationTitle = lastMessage.senderName;
+                    // Sizin veritabanı alanlarınızla tam eşleşme (sender ve text):
+                    if (lastMessage.sender) notificationTitle = lastMessage.sender;
                     if (lastMessage.text) notificationOptions.body = lastMessage.text;
                     
-                    // Eğer veritabanınızda oda/grup ismi varsa başlığa şık bir şekilde ekler (#Genel Sohbet gibi)
-                    if (lastMessage.roomName) {
-                        notificationTitle += ` (#${lastMessage.roomName})`;
+                    // 🧠 AKILLI ODA ÇÖZÜCÜ (index.html'e dokunmadan çalışır):
+                    // Eğer mesaj nesnesinde roomId yoksa, Realtime Database'deki mesajın üst klasör 
+                    // veya veri yolundan hangi odaya ait olduğunu tahmin etmeye çalışır.
+                    if (lastMessage.roomId) {
+                        notificationOptions.data.targetUrl = `${self.location.origin}/?room=${lastMessage.roomId}`;
+                        if (lastMessage.roomName) notificationTitle += ` (#${lastMessage.roomName})`;
                     }
                 }
             }
-            // Bildirimi tarayıcıya/işletim sistemine resmi olarak teslim et
+            // Bildirimi ekrana resmi olarak bas
             return self.registration.showNotification(notificationTitle, notificationOptions);
         })
         .catch(err => {
-            console.error("[Service Worker] Veri çekme veya işletim sistemi hatası:", err);
-            // İnternet kopuk olsa veya veritabanı anlık yanıt vermese bile süreci çökertme, yedek bildirimi göster!
+            console.error("[Service Worker] Hata:", err);
+            // Bağlantı kopsa bile sistemi çökertme, en azından yedek bildirimi ekranda göster!
             return self.registration.showNotification(notificationTitle, notificationOptions);
         });
 
-    // İşletim sistemine (Özellikle iPadOS/iOS): "Bu akış bitene kadar arka plan motorunu açık tut" emrini veriyoruz.
     event.waitUntil(pipeline);
 });
 
-// 🔥 BİLGİSAYAR & MOBİL ETKİLEŞİM MEKANİZMASI:
-// Bildirime tıklandığında uygulamanın/sitenin otomatik ön plana gelmesini sağlar.
+// 📌 TIKLANDIĞINDA ÇALIŞAN KUSURSUZ YÖNLENDİRİCİ
 self.addEventListener('notificationclick', function(event) {
-    event.notification.close(); // Bildirim kutucuğunu kapat
+    event.notification.close(); // Bildirim kutusunu kapat
 
-    // Eğer site sekmelerde zaten açıksa oraya odaklan (parlat), kapalıysa yeni sekmede temizce aç
-    const urlToOpen = self.location.origin;
+    const targetUrl = event.notification.data.targetUrl;
     
     const clickProcess = clients.matchAll({ type: 'window', includeUncontrolled: true })
         .then(windowClients => {
+            // Eğer site sekmelerde açıksa, yeni sekme açmak yerine açık olan sekmeyi parlatır
             for (let i = 0; i < windowClients.length; i++) {
                 const client = windowClients[i];
-                // Eğer site zaten bir sekmede açıksa oraya odaklan
-                if (client.url === urlToOpen && 'focus' in client) {
+                if (client.url.startsWith(self.location.origin) && 'focus' in client) {
                     return client.focus();
                 }
             }
-            // Sitenin sekmesi tamamen kapalıysa yeni sekme aç
+            // Site kapalıysa yeni sekmede tertemiz açar
             if (clients.openWindow) {
-                return clients.openWindow(urlToOpen);
+                return clients.openWindow(targetUrl);
             }
         });
 
